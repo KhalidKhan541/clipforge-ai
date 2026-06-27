@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ClipForge AI — Premium clip art PNGs for creators. Browse thousands of unique designs for your projects.">
+<title>ClipForge AI — Premium Clip Art for Creators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.paypal.com/sdk/js?client-id=test"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg-primary:#0a0a0f;--bg-secondary:#12121a;--bg-card:#1a1a2e;--bg-card-hover:#222240;
+--text-primary:#f0f0f5;--text-secondary:#a0a0b8;--text-muted:#6b6b80;
+--accent-purple:#8b5cf6;--accent-blue:#3b82f6;--accent-pink:#ec4899;
+--gradient-main:linear-gradient(135deg,#8b5cf6,#3b82f6,#ec4899);
+--gradient-card:linear-gradient(145deg,rgba(139,92,246,.08),rgba(59,130,246,.08));
+--border-color:rgba(255,255,255,.06);--border-hover:rgba(139,92,246,.3);
+--radius:12px;--radius-lg:20px;--shadow:0 4px 24px rgba(0,0,0,.4);
+--transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{
+--bg-primary:#fafafa;--bg-secondary:#ffffff;--bg-card:#ffffff;--bg-card-hover:#f5f5ff;
+--text-primary:#1a1a2e;--text-secondary:#555566;--text-muted:#888899;
+--border-color:rgba(0,0,0,.08);--border-hover:rgba(139,92,246,.3);
+--gradient-card:linear-gradient(145deg,rgba(139,92,246,.05),rgba(59,130,246,.05));
+--shadow:0 4px 24px rgba(0,0,0,.08);
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.6;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;border:none;font-family:inherit}
+img{max-width:100%;display:block}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+
+/* Loader */
+#loader{position:fixed;inset:0;background:var(--bg-primary);z-index:10000;display:flex;align-items:center;justify-content:center;transition:opacity .5s,visibility .5s}
+#loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loader-ring{width:56px;height:56px;border:3px solid var(--border-color);border-top-color:var(--accent-purple);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:16px 0;transition:var(--transition)}
+nav.scrolled{background:rgba(10,10,15,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-color);padding:10px 0}
+[data-theme="light"] nav.scrolled{background:rgba(250,250,250,.9)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.3rem}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:var(--gradient-main);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#fff}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{font-size:.9rem;font-weight:500;color:var(--text-secondary);transition:var(--transition);position:relative}
+.nav-links a:hover{color:var(--text-primary)}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;background:var(--gradient-main);transition:var(--transition)}
+.nav-links a:hover::after{width:100%}
+.nav-actions{display:flex;align-items:center;gap:12px}
+.theme-toggle{width:40px;height:40px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text-primary);transition:var(--transition)}
+.theme-toggle:hover{border-color:var(--border-hover);background:var(--bg-card-hover)}
+.hamburger{display:none;flex-direction:column;gap:5px;background:none;padding:8px}
+.hamburger span{width:22px;height:2px;background:var(--text-primary);border-radius:2px;transition:var(--transition)}
+.mobile-menu{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg-primary);z-index:999;padding:80px 24px 24px;flex-direction:column;gap:24px}
+.mobile-menu.open{display:flex}
+.mobile-menu a{font-size:1.3rem;font-weight:600;color:var(--text-primary);padding:12px 0;border-bottom:1px solid var(--border-color)}
+.mobile-close{position:absolute;top:20px;right:24px;background:none;color:var(--text-primary);font-size:1.5rem}
+@media(max-width:768px){.nav-links,.nav-actions .theme-toggle{display:none}.hamburger{display:flex}}
+
+/* Hero */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;left:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(139,92,246,.15),transparent 70%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-30%;right:-20%;width:500px;height:500px;background:radial-gradient(circle,rgba(59,130,246,.12),transparent 70%);pointer-events:none}
+.hero-content{position:relative;z-index:1;max-width:800px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:50px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);color:var(--accent-purple);font-size:.8rem;font-weight:600;margin-bottom:28px;animation:fadeUp .6s ease}
+.hero h1{font-size:clamp(2.5rem,7vw,5rem);font-weight:900;line-height:1.1;margin-bottom:20px;animation:fadeUp .6s ease .1s both}
+.hero-gradient{background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:gradientShift 4s ease infinite;background-size:200% 200%}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero p{font-size:clamp(1rem,2.5vw,1.3rem);color:var(--text-secondary);max-width:600px;margin:0 auto 36px;animation:fadeUp .6s ease .2s both}
+.hero-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s ease .3s both}
+.btn{padding:14px 32px;border-radius:12px;font-weight:600;font-size:.95rem;transition:var(--transition);display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--gradient-main);color:#fff;box-shadow:0 4px 20px rgba(139,92,246,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(139,92,246,.4)}
+.btn-secondary{background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color)}
+.btn-secondary:hover{border-color:var(--border-hover);transform:translateY(-2px)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section */
+section{padding:100px 0}
+.section-header{text-align:center;margin-bottom:60px}
+.section-tag{display:inline-block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--accent-purple);margin-bottom:12px}
+.section-title{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;margin-bottom:16px}
+.section-desc{font-size:1.05rem;color:var(--text-secondary);max-width:600px;margin:0 auto}
+
+/* Packs */
+.packs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:28px}
+.pack-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);overflow:hidden;transition:var(--transition);position:relative}
+.pack-card:hover{transform:translateY(-6px);border-color:var(--border-hover);box-shadow:var(--shadow)}
+.pack-image{height:220px;position:relative;overflow:hidden}
+.pack-image .placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;color:#fff;font-weight:700}
+.pack-badge{position:absolute;top:12px;left:12px;padding:5px 12px;border-radius:50px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.badge-new{background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff}
+.badge-hot{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
+.badge-sale{background:linear-gradient(135deg,#10b981,#3b82f6);color:#fff}
+.pack-info{padding:20px}
+.pack-category{font-size:.75rem;font-weight:600;color:var(--accent-purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.pack-name{font-size:1.15rem;font-weight:700;margin-bottom:8px}
+.pack-desc{font-size:.85rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5}
+.pack-meta{display:flex;align-items:center;justify-content:space-between}
+.pack-price{font-size:1.3rem;font-weight:800;background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.pack-count{font-size:.8rem;color:var(--text-muted)}
+.paypal-btn-container{margin-top:14px;min-height:45px}
+
+/* Categories */
+.categories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.category-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:24px 16px;text-align:center;transition:var(--transition);cursor:pointer}
+.category-card:hover{transform:translateY(-4px);border-color:var(--border-hover);box-shadow:var(--shadow)}
+.category-icon{font-size:2rem;margin-bottom:10px}
+.category-name{font-size:.85rem;font-weight:600;text-transform:capitalize}
+.category-count{font-size:.75rem;color:var(--text-muted);margin-top:4px}
+
+/* How It Works */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:40px}
+.step-card{text-align:center;padding:32px}
+.step-number{width:64px;height:64px;border-radius:16px;background:var(--gradient-card);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;margin:0 auto 20px;background-image:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.step-title{font-size:1.2rem;font-weight:700;margin-bottom:10px}
+.step-desc{font-size:.9rem;color:var(--text-secondary);line-height:1.6}
+
+/* Pricing */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;align-items:start}
+.price-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:36px;text-align:center;transition:var(--transition);position:relative}
+.price-card:hover{transform:translateY(-4px);border-color:var(--border-hover);box-shadow:var(--shadow)}
+.price-card.featured{border-color:var(--accent-purple);background:linear-gradient(145deg,rgba(139,92,246,.08),rgba(59,130,246,.04))}
+.price-popular{position:absolute;top:-14px;left:50%;transform:translateX(-50%);padding:6px 20px;border-radius:50px;background:var(--gradient-main);color:#fff;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.price-name{font-size:1.3rem;font-weight:700;margin-bottom:8px}
+.price-amount{font-size:3rem;font-weight:900;margin-bottom:4px}
+.price-amount span{font-size:1rem;font-weight:500;color:var(--text-muted)}
+.price-desc{font-size:.85rem;color:var(--text-secondary);margin-bottom:24px}
+.price-features{list-style:none;text-align:left;margin-bottom:28px}
+.price-features li{padding:10px 0;border-bottom:1px solid var(--border-color);font-size:.9rem;color:var(--text-secondary);display:flex;align-items:center;gap:10px}
+.price-features li::before{content:'✓';color:var(--accent-purple);font-weight:700}
+.price-btn{width:100%;padding:14px;border-radius:12px;font-weight:700;font-size:.95rem;transition:var(--transition)}
+.price-btn-primary{background:var(--gradient-main);color:#fff;box-shadow:0 4px 16px rgba(139,92,246,.25)}
+.price-btn-primary:hover{box-shadow:0 8px 24px rgba(139,92,246,.35);transform:translateY(-2px)}
+.price-btn-secondary{background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color)}
+.price-btn-secondary:hover{border-color:var(--border-hover)}
+
+/* Testimonials */
+.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px}
+.testimonial-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:28px;transition:var(--transition)}
+.testimonial-card:hover{border-color:var(--border-hover)}
+.testimonial-stars{color:#f59e0b;font-size:1rem;margin-bottom:14px;letter-spacing:2px}
+.testimonial-text{font-size:.95rem;color:var(--text-secondary);line-height:1.7;margin-bottom:18px;font-style:italic}
+.testimonial-author{display:flex;align-items:center;gap:12px}
+.testimonial-avatar{width:42px;height:42px;border-radius:50%;background:var(--gradient-main);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.85rem}
+.testimonial-name{font-weight:600;font-size:.9rem}
+.testimonial-role{font-size:.8rem;color:var(--text-muted)}
+
+/* FAQ */
+.faq-list{max-width:760px;margin:0 auto}
+.faq-item{border:1px solid var(--border-color);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;transition:var(--transition)}
+.faq-item.open{border-color:var(--border-hover)}
+.faq-question{width:100%;padding:20px 24px;background:var(--bg-card);color:var(--text-primary);font-size:.95rem;font-weight:600;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:var(--transition)}
+.faq-question:hover{background:var(--bg-card-hover)}
+.faq-arrow{font-size:1.2rem;transition:var(--transition);color:var(--text-muted)}
+.faq-item.open .faq-arrow{transform:rotate(45deg);color:var(--accent-purple)}
+.faq-answer{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;padding:0 24px}
+.faq-item.open .faq-answer{max-height:300px;padding:0 24px 20px}
+.faq-answer p{font-size:.9rem;color:var(--text-secondary);line-height:1.7}
+
+/* Newsletter */
+.newsletter{background:var(--gradient-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:60px 40px;text-align:center;margin-top:40px}
+.newsletter h3{font-size:1.6rem;font-weight:800;margin-bottom:10px}
+.newsletter p{color:var(--text-secondary);margin-bottom:24px}
+.newsletter-form{display:flex;gap:12px;max-width:460px;margin:0 auto;flex-wrap:wrap;justify-content:center}
+.newsletter-input{flex:1;min-width:240px;padding:14px 18px;border-radius:12px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-size:.9rem;font-family:inherit;outline:none;transition:var(--transition)}
+.newsletter-input:focus{border-color:var(--accent-purple)}
+.newsletter-btn{padding:14px 28px;border-radius:12px;background:var(--gradient-main);color:#fff;font-weight:600;font-size:.9rem;transition:var(--transition)}
+.newsletter-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(139,92,246,.3)}
+.newsletter-msg{margin-top:12px;font-size:.85rem;font-weight:600;display:none}
+
+/* Footer */
+footer{border-top:1px solid var(--border-color);padding:48px 0 28px;text-align:center}
+.footer-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.footer-links a{font-size:.85rem;color:var(--text-secondary);transition:var(--transition)}
+.footer-links a:hover{color:var(--accent-purple)}
+.footer-copy{font-size:.8rem;color:var(--text-muted)}
+
+/* Back to top */
+.back-to-top{position:fixed;bottom:28px;right:28px;width:48px;height:48px;border-radius:14px;background:var(--gradient-main);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 4px 20px rgba(139,92,246,.3);opacity:0;visibility:hidden;transform:translateY(10px);transition:var(--transition);z-index:900}
+.back-to-top.visible{opacity:1;visibility:visible;transform:translateY(0)}
+.back-to-top:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(139,92,246,.4)}
+
+/* Download Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:var(--transition);padding:24px}
+.modal-overlay.active{opacity:1;visibility:visible}
+.modal{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:40px;max-width:480px;width:100%;text-align:center;transform:scale(.9);transition:var(--transition)}
+.modal-overlay.active .modal{transform:scale(1)}
+.modal h3{font-size:1.4rem;font-weight:800;margin-bottom:12px}
+.modal p{color:var(--text-secondary);margin-bottom:24px;line-height:1.6}
+.modal .btn{width:100%;justify-content:center}
+
+/* Search */
+.search-bar{max-width:500px;margin:0 auto 40px;position:relative}
+.search-bar input{width:100%;padding:14px 18px 14px 44px;border-radius:12px;border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-primary);font-size:.9rem;font-family:inherit;outline:none;transition:var(--transition)}
+.search-bar input:focus{border-color:var(--accent-purple)}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1rem}
+
+/* Animations */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+@media(max-width:640px){
+.packs-grid{grid-template-columns:1fr}
+.categories-grid{grid-template-columns:repeat(3,1fr);gap:10px}
+.category-card{padding:16px 10px}
+.pricing-grid{grid-template-columns:1fr}
+.testimonials-grid{grid-template-columns:1fr}
+.steps-grid{grid-template-columns:1fr}
+.newsletter{padding:40px 20px}
+.hero-buttons{flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="loader-ring"></div></div>
+
+<nav id="navbar">
+<div class="container nav-inner">
+<a href="#" class="logo">
+<div class="logo-icon">✦</div>
+ClipForge
+</a>
+<ul class="nav-links">
+<li><a href="#packs">Packs</a></li>
+<li><a href="#categories">Categories</a></li>
+<li><a href="#how-it-works">How It Works</a></li>
+<li><a href="#pricing">Pricing</a></li>
+<li><a href="#faq">FAQ</a></li>
+</ul>
+<div class="nav-actions">
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
+<button class="hamburger" onclick="toggleMobile()" aria-label="Menu">
+<span></span><span></span><span></span>
+</button>
+</div>
+</div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+<button class="mobile-close" onclick="toggleMobile()">✕</button>
+<a href="#packs" onclick="toggleMobile()">Packs</a>
+<a href="#categories" onclick="toggleMobile()">Categories</a>
+<a href="#how-it-works" onclick="toggleMobile()">How It Works</a>
+<a href="#pricing" onclick="toggleMobile()">Pricing</a>
+<a href="#faq" onclick="toggleMobile()">FAQ</a>
+</div>
+
+<section class="hero" id="hero">
+<div class="hero-content">
+<div class="hero-badge">✨ 2,500+ Clip Art PNGs Available</div>
+<h1>Premium Clip Art<br>for <span class="hero-gradient">Creators</span></h1>
+<p>Stunning, ready-to-use clip art packs for designers, crafters, and content creators. Instant downloads, lifetime access.</p>
+<div class="hero-buttons">
+<a href="#packs" class="btn btn-primary">Browse Packs ↓</a>
+<a href="#pricing" class="btn btn-secondary">View Pricing</a>
+</div>
+</div>
+</section>
+
+<section id="packs">
+<div class="container">
+<div class="section-header reveal">
+<div class="section-tag">Featured Packs</div>
+<h2 class="section-title">Trending Right Now</h2>
+<p class="section-desc">Handpicked clip art packs loved by thousands of creators worldwide.</p>
+</div>
+<div class="search-bar reveal">
+<span class="search-icon">🔍</span>
+<input type="text" id="searchInput" placeholder="Search packs..." oninput="filterPacks()">
+</div>
+<div class="packs-grid" id="packsGrid"></div>
+</div>
+</section>
+
+<section id="categories" style="background:var(--bg-secondary)">
+<div class="container">
+<div class="section-header reveal">
+<div class="section-tag">Categories</div>
+<h2 class="section-title">Find Your Style</h2>
+<p class="section-desc">Explore 15 curated categories to find the perfect clip art for any project.</p>
+</div>
+<div class="categories-grid" id="categoriesGrid"></div>
+</div>
+</section>
+
+<section id="how-it-works">
+<div class="container">
+<div class="section-header reveal">
+<div class="section-tag">How It Works</div>
+<h2 class="section-title">Three Simple Steps</h2>
+<p class="section-desc">Get started in seconds — no account required.</p>
+</div>
+<div class="steps-grid">
+<div class="step-card reveal">
+<div class="step-number">1</div>
+<h3 class="step-title">Browse & Choose</h3>
+<p class="step-desc">Explore our growing library of clip art packs. Filter by category, style, or keyword to find exactly what you need.</p>
+</div>
+<div class="step-card reveal">
+<div class="step-number">2</div>
+<h3 class="step-title">Purchase Securely</h3>
+<p class="step-desc">Pay safely with PayPal. One-time purchase, no subscriptions. Instant confirmation after payment.</p>
+</div>
+<div class="step-card reveal">
+<div class="step-number">3</div>
+<h3 class="step-title">Download Instantly</h3>
+<p class="step-desc">Get your files immediately after purchase. High-resolution PNGs with transparent backgrounds, ready to use.</p>
+</div>
+</div>
+</div>
+</section>
+
+<section id="pricing" style="background:var(--bg-secondary)">
+<div class="container">
+<div class="section-header reveal">
+<div class="section-tag">Pricing</div>
+<h2 class="section-title">Simple, Transparent Pricing</h2>
+<p class="section-desc">No hidden fees. Pay once, download forever.</p>
+</div>
+<div class="pricing-grid">
+<div class="price-card reveal">
+<h3 class="price-name">Starter</h3>
+<div class="price-amount">$2.99<span></span></div>
+<p class="price-desc">Perfect for trying us out</p>
+<ul class="price-features">
+<li>5 Clip Art PNGs</li>
+<li>Personal Use License</li>
+<li>Instant Download</li>
+<li>Email Support</li>
+</ul>
+<button class="price-btn price-btn-secondary" onclick="payWithPayPal(2.99,'Starter Pack')">Get Starter</button>
+</div>
+<div class="price-card featured reveal">
+<div class="price-popular">Most Popular</div>
+<h3 class="price-name">Mega Pack</h3>
+<div class="price-amount">$6.99<span></span></div>
+<p class="price-desc">Best value for creators</p>
+<ul class="price-features">
+<li>25 Clip Art PNGs</li>
+<li>Personal + Commercial Use</li>
+<li>Instant Download</li>
+<li>Priority Support</li>
+<li>Bonus Seasonal Pack</li>
+</ul>
+<button class="price-btn price-btn-primary" onclick="payWithPayPal(6.99,'Mega Pack')">Get Mega Pack</button>
+</div>
+<div class="price-card reveal">
+<h3 class="price-name">Ultimate Bundle</h3>
+<div class="price-amount">$9.99<span></span></div>
+<p class="price-desc">Everything you'll ever need</p>
+<ul class="price-features">
+<li>100+ Clip Art PNGs</li>
+<li>Full Commercial License</li>
+<li>Instant Download</li>
+<li>Priority Support</li>
+<li>All Future Packs Free</li>
+</ul>
+<button class="price-btn price-btn-secondary" onclick="payWithPayPal(9.99,'Ultimate Bundle')">Get Bundle</button>
+</div>
+</div>
+</div>
+</section>
+
+<section id="testimonials">
+<div class="container">
+<div class="section-header reveal">
+<div class="section-tag">Testimonials</div>
+<h2 class="section-title">Loved by Creators</h2>
+<p class="section-desc">See what our customers are saying about ClipForge AI.</p>
+</div>
+<div class="testimonials-grid">
+<div class="testimonial-card reveal">
+<div class="testimonial-stars">★★★★★</div>
+<p class="testimonial-text">"ClipForge has completely transformed my Etsy shop. The quality is incredible and the instant downloads save me so much time. Worth every penny!"</p>
+<div class="testimonial-author">
+<div class="testimonial-avatar">SJ</div>
+<div><div class="testimonial-name">Sarah Johnson</div><div class="testimonial-role">Etsy Shop Owner</div></div>
+</div>
+</div>
+<div class="testimonial-card reveal">
+<div class="testimonial-stars">★★★★★</div>
+<p class="testimonial-text">"As a social media manager, I need fresh visuals constantly. ClipForge's packs are exactly what I need — on trend, high quality, and easy to use."</p>
+<div class="testimonial-author">
+<div class="testimonial-avatar">MR</div>
+<div><div class="testimonial-name">Mike Rodriguez</div><div class="testimonial-role">Social Media Manager</div></div>
+</div>
+</div>
+<div class="testimonial-card reveal">
+<div class="testimonial-stars">★★★★★</div>
+<p class="testimonial-text">"I bought the Ultimate Bundle and it's been a game changer for my planner business. The kawaii collection is adorable and my customers love it!"</p>
+<div class="testimonial-author">
+<div class="testimonial-avatar">EP</div>
+<div><div class="testimonial-name">Emily Park</div><div class="testimonial-role">Digital Planner Designer</div></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="faq" style="background:var(--bg-secondary)">
+<div class="container">
+<div class="section-header reveal">
+<div class="section-tag">FAQ</div>
+<h2 class="section-title">Frequently Asked Questions</h2>
+<p class="section-desc">Got questions? We've got answers.</p>
+</div>
+<div class="faq-list" id="faqList"></div>
+</div>
+</section>
+
+<section id="newsletter">
+<div class="container">
+<div class="newsletter reveal">
+<h3>Stay in the Loop</h3>
+<p>Get notified about new packs, exclusive deals, and free clip art drops.</p>
+<form class="newsletter-form" onsubmit="subscribeNewsletter(event)">
+<input type="email" class="newsletter-input" placeholder="Enter your email" required>
+<button type="submit" class="newsletter-btn">Subscribe</button>
+</form>
+<div class="newsletter-msg" id="newsletterMsg"></div>
+</div>
+</div>
+</section>
+
+<footer>
+<div class="container">
+<div class="footer-links">
+<a href="#packs">Packs</a>
+<a href="#categories">Categories</a>
+<a href="#pricing">Pricing</a>
+<a href="#faq">FAQ</a>
+<a href="mailto:khalid.khan46571@gmail.com">Contact</a>
+<a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a>
+</div>
+<p class="footer-copy">&copy; 2026 ClipForge AI. Made with ♥ by Khalid Khan. All rights reserved.</p>
+</div>
+</footer>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<div class="modal-overlay" id="downloadModal">
+<div class="modal">
+<h3>🎉 Purchase Complete!</h3>
+<p>Thank you for your purchase! Your clip art files are ready for download. Check your email for the download link, or click below to access your files.</p>
+<button class="btn btn-primary" onclick="closeModal()">Continue Browsing</button>
+</div>
+</div>
+
+<script>
+const PACKS=[
+{name:"Boho Floral Dreams",category:"Boho Florals",count:48,price:4.99,desc:"Soft, earthy floral arrangements perfect for wedding and boho designs.",gradient:"linear-gradient(135deg,#c084fc,#f0abfc)",badge:"new"},
+{name:"Kawaii Cuties",category:"Kawaii Cute",count:62,price:5.99,desc:"Adorable characters and elements that make everything sweeter.",gradient:"linear-gradient(135deg,#f472b6,#fb923c)",badge:"hot"},
+{name:"Retro Vibes Pack",category:"Vintage Retro",count:35,price:3.99,desc:"Groovy throwback designs with a modern twist.",gradient:"linear-gradient(135deg,#fbbf24,#f97316)",badge:"sale"},
+{name:"Watercolor Wonders",category:"Watercolor Elements",count:40,price:4.99,desc:"Beautiful hand-painted watercolor elements for elegant projects.",gradient:"linear-gradient(135deg,#60a5fa,#a78bfa)"},
+{name:"Planner Paradise",category:"Digital Planner",count:85,price:6.99,desc:"Stickers, dividers, and decorative elements for digital planners.",gradient:"linear-gradient(135deg,#34d399,#2dd4bf)",badge:"new"},
+{name:"Social Media Kit",category:"Social Media",count:55,price:5.99,desc:"Eye-catching graphics for Instagram, TikTok, and more.",gradient:"linear-gradient(135deg,#f43f5e,#a855f7)",badge:"new"}
+];
+
+const CATEGORIES=[
+{name:"Boho Florals",icon:"🌸",count:120},{name:"Kawaii Cute",icon:"🧁",count:95},{name:"Vintage Retro",icon:"🎞️",count:80},
+{name:"Watercolor",icon:"🎨",count:110},{name:"Digital Planner",icon:"📅",count:150},{name:"Social Media",icon:"📱",count:88},
+{name:"Wedding",icon:"💍",count:75},{name:"Nursery Art",icon:"🧸",count:65},{name:"Bullet Journal",icon:"📓",count:92},
+{name:"Seasonal",icon:"🎄",count:130},{name:"Meme Templates",icon:"😂",count:45},{name:"UI Icons",icon:"⚡",count:200},
+{name:"Food Art",icon:"🍕",count:70},{name:"Animal Cartoons",icon:"🦊",count:105},{name:"Abstract",icon:"🔮",count:60}
+];
+
+const FAQS=[
+{q:"What file format are the clip art files?",a:"All clip art files are provided as high-resolution PNG files with transparent backgrounds. They're ready to use in any design software, word processor, or online tool."},
+{q:"Can I use these for commercial projects?",a:"Yes! Our Mega Pack and Ultimate Bundle include commercial licenses. You can use the clip art in products you sell, client work, and marketing materials. The Starter pack is for personal use only."},
+{q:"How do I receive my files after purchase?",a:"After completing your PayPal payment, you'll receive an instant email with a download link. You can also access your purchased files from your account dashboard at any time."},
+{q:"Do you offer refunds?",a:"Due to the digital nature of our products, we generally don't offer refunds once files have been downloaded. However, if you experience any issues with your purchase, please contact us and we'll make it right."},
+{q:"How often do you add new clip art packs?",a:"We release new clip art packs weekly! Subscribe to our newsletter to get notified about new releases and exclusive discounts. Ultimate Bundle holders get all future packs for free."}
+];
+
+function renderPacks(filter=''){
+const grid=document.getElementById('packsGrid');
+const filtered=PACKS.filter(p=>!filter||p.name.toLowerCase().includes(filter)||p.category.toLowerCase().includes(filter));
+grid.innerHTML=filtered.map((p,i)=>`
+<div class="pack-card reveal" style="transition-delay:${i*.05}s">
+<div class="pack-image">
+<div class="placeholder" style="background:${p.gradient}">${p.category.split(' ')[0]}</div>
+${p.badge?`<span class="pack-badge badge-${p.badge}">${p.badge}</span>`:''}
+</div>
+<div class="pack-info">
+<div class="pack-category">${p.category}</div>
+<div class="pack-name">${p.name}</div>
+<div class="pack-desc">${p.desc}</div>
+<div class="pack-meta">
+<div class="pack-price">$${p.price.toFixed(2)}</div>
+<div class="pack-count">${p.count} PNGs</div>
+</div>
+<div class="paypal-btn-container" id="paypal-${i}"></div>
+</div>
+</div>`).join('');
+if(filtered.length===0)grid.innerHTML='<p style="text-align:center;color:var(--text-muted);grid-column:1/-1;padding:40px">No packs found matching your search.</p>';
+initReveal();
+renderPayPalButtons(filtered);
+}
+
+function renderPayPalButtons(packs){
+packs.forEach((p,i)=>{
+setTimeout(()=>{
+const container=document.getElementById('paypal-'+i);
+if(!container)return;
+paypal.Buttons({
+style:{layout:'horizontal',color:'blue',shape:'rect',height:40},
+createOrder:function(data,actions){return actions.order.create({purchase_units:[{amount:{value:p.price.toFixed(2)},description:p.name+' - ClipForge AI'}]})},
+onApprove:function(data,actions){return actions.order.capture().then(function(){document.getElementById('downloadModal').classList.add('active')})},
+onError:function(){alert('Payment failed. Please try again.')}
+}).render('#paypal-'+i);
+},100);
+});
+}
+
+function renderCategories(){
+document.getElementById('categoriesGrid').innerHTML=CATEGORIES.map(c=>`
+<div class="category-card reveal">
+<div class="category-icon">${c.icon}</div>
+<div class="category-name">${c.name}</div>
+<div class="category-count">${c.count} items</div>
+</div>`).join('');
+}
+
+function renderFAQ(){
+document.getElementById('faqList').innerHTML=FAQS.map((f,i)=>`
+<div class="faq-item reveal">
+<button class="faq-question" onclick="toggleFAQ(${i})">
+<span>${f.q}</span>
+<span class="faq-arrow">+</span>
+</button>
+<div class="faq-answer"><p>${f.a}</p></div>
+</div>`).join('');
+}
+
+function toggleFAQ(i){
+const items=document.querySelectorAll('.faq-item');
+items.forEach((item,idx)=>{if(idx!==i)item.classList.remove('open')});
+items[i].classList.toggle('open');
+}
+
+function filterPacks(){
+renderPacks(document.getElementById('searchInput').value.toLowerCase().trim());
+}
+
+function payWithPayPal(amount,name){
+paypal.Buttons({
+style:{layout:'horizontal',color:'blue',shape:'rect',height:45},
+createOrder:function(data,actions){return actions.order.create({purchase_units:[{amount:{value:amount.toFixed(2)},description:name+' - ClipForge AI'}]})},
+onApprove:function(data,actions){return actions.order.capture().then(function(){document.getElementById('downloadModal').classList.add('active')})},
+onError:function(){alert('Payment failed. Please try again.')}
+}).render('#pricing .price-btn');
+}
+
+function closeModal(){document.getElementById('downloadModal').classList.remove('active')}
+
+function toggleTheme(){
+const html=document.documentElement;
+const btn=document.querySelector('.theme-toggle');
+if(html.getAttribute('data-theme')==='light'){html.removeAttribute('data-theme');btn.textContent='🌙';localStorage.setItem('theme','dark')}
+else{html.setAttribute('data-theme','light');btn.textContent='☀️';localStorage.setItem('theme','light')}
+}
+
+function toggleMobile(){document.getElementById('mobileMenu').classList.toggle('open')}
+
+function subscribeNewsletter(e){
+e.preventDefault();
+const email=e.target.querySelector('input').value;
+const subs=JSON.parse(localStorage.getItem('newsletter_subs')||'[]');
+if(!subs.includes(email)){subs.push(email);localStorage.setItem('newsletter_subs',JSON.stringify(subs))}
+const msg=document.getElementById('newsletterMsg');
+msg.style.display='block';msg.style.color='var(--accent-purple)';msg.textContent='✓ You\'re subscribed! Welcome aboard.';
+e.target.querySelector('input').value='';
+}
+
+function initReveal(){
+const els=document.querySelectorAll('.reveal');
+const obs=new IntersectionObserver((entries)=>{
+entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+},{threshold:0.1});
+els.forEach(el=>obs.observe(el));
+}
+
+window.addEventListener('scroll',()=>{
+const nav=document.getElementById('navbar');
+const btn=document.getElementById('backToTop');
+if(window.scrollY>50)nav.classList.add('scrolled');else nav.classList.remove('scrolled');
+if(window.scrollY>600)btn.classList.add('visible');else btn.classList.remove('visible');
+});
+
+window.addEventListener('DOMContentLoaded',()=>{
+renderPacks();renderCategories();renderFAQ();initReveal();
+const saved=localStorage.getItem('theme');if(saved==='light'){document.documentElement.setAttribute('data-theme','light');document.querySelector('.theme-toggle').textContent='☀️'}
+setTimeout(()=>document.getElementById('loader').classList.add('hidden'),600);
+});
+</script>
+</body>
+</html>

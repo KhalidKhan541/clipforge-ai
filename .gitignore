@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+reports/
+data/*.json
+!data/packs.json
+!data/orders.json
+!data/newsletter.json

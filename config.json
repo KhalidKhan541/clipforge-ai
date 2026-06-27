@@ -1,0 +1,56 @@
+{
+  "bot_name": "ClipForge AI",
+  "owner": {
+    "name": "Khalid Khan",
+    "email": "khalid.khan46571@gmail.com",
+    "linkedin": "www.linkedin.com/in/khalid-khan-4b548033b"
+  },
+  "platforms": {
+    "cloudflare_pages": {
+      "enabled": true,
+      "site_name": "clipforge-ai",
+      "custom_domain": null
+    },
+    "paypal": {
+      "enabled": true,
+      "business_email": "khalid.khan46571@gmail.com",
+      "currency": "USD"
+    }
+  },
+  "generation": {
+    "packs_per_day": 3,
+    "images_per_pack": 50,
+    "categories": [
+      "boho_florals",
+      "kawaii_cute",
+      "vintage_retro",
+      "watercolor_elements",
+      "digital_planner",
+      "social_media_templates",
+      "wedding_stationery",
+      "nursery_wall_art",
+      "bullet_journal",
+      "seasonal_holiday",
+      "meme_templates",
+      "ui_icons",
+      "food_illustrations",
+      "animal_cartoons",
+      "abstract_patterns"
+    ],
+    "image_style": "flat vector illustration, clean lines, white background, high resolution PNG, transparent background",
+    "pricing": {
+      "starter_pack": 2.99,
+      "mega_pack": 6.99,
+      "bundle_pack": 9.99
+    }
+  },
+  "content": {
+    "niche": "clip art for small businesses, content creators, and crafters",
+    "brand_voice": "friendly, creative, helpful",
+    "target_audience": "Etsy sellers, Canva designers, small business owners, teachers, crafters"
+  },
+  "delivery": {
+    "format": "PNG + PDF guide",
+    "platform": "Gumroad (free listing) + Cloudflare Pages (storefront)"
+  }
+}
