@@ -15,7 +15,7 @@ from email.mime.multipart import MIMEMultipart
 sys.path.insert(0, str(Path(__file__).parent))
 
 from prompt_library import CATEGORIES, get_prompts_for_category
-from generator import generate_pack
+from generator import generate_category_pack, get_groq_client, load_config
 from image_generator import ImageGenerator
 from gumroad_uploader import GumroadUploader
 
@@ -111,6 +111,9 @@ def run_pipeline(count=3):
     DATA_DIR.mkdir(exist_ok=True)
     OUTPUT_DIR.mkdir(exist_ok=True)
 
+    config = load_config()
+    client = get_groq_client()
+
     category_keys = list(CATEGORIES.keys())
     selected = random.sample(category_keys, min(count, len(category_keys)))
 
@@ -130,12 +133,11 @@ def run_pipeline(count=3):
         print(f"\n--- {cat['name']} ---")
 
         print("1. Generating prompts with Groq...")
-        pack_data = generate_pack(category=cat_key, count=1)
-        if not pack_data:
+        pack = generate_category_pack(client, config, cat_key, 1, 50)
+        if not pack:
             print(f"  Failed to generate prompts for {cat['name']}")
             continue
 
-        pack = pack_data[0]
         pack_name = pack.get("pack_name", f"{cat_key}_pack")
 
         print("2. Generating images with Pollinations.ai...")
