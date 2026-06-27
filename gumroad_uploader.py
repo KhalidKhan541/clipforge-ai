@@ -1,10 +1,10 @@
 """
 Gumroad Uploader — Auto-creates products on Gumroad using their API
+Uploads PDF files for clip art delivery
 """
 import os
 import json
 import requests
-import time
 from pathlib import Path
 
 
@@ -24,7 +24,7 @@ class GumroadUploader:
         return resp.json().get("products", [])
 
     def create_product(self, name, price_cents, description="", url=None,
-                       preview_url=None, tags=None, file_path=None):
+                       preview_url=None, tags=None):
         """Create a new product on Gumroad"""
         data = {
             "name": name,
@@ -42,15 +42,10 @@ class GumroadUploader:
         resp = requests.post(f"{self.API_BASE}/products",
                              headers=self.headers, data=data)
         resp.raise_for_status()
-        product = resp.json().get("product", {})
-
-        if file_path and product.get("id"):
-            self.upload_file(product["id"], file_path)
-
-        return product
+        return resp.json().get("product", {})
 
     def upload_file(self, product_id, file_path):
-        """Upload a file to an existing product"""
+        """Upload a PDF file to an existing product"""
         url = f"{self.API_BASE}/products/{product_id}/upload"
         with open(file_path, "rb") as f:
             resp = requests.post(url, headers=self.headers,
@@ -73,8 +68,8 @@ class GumroadUploader:
         resp.raise_for_status()
         return resp.json()
 
-    def upload_clip_art_pack(self, pack_data, zip_path):
-        """Upload a complete clip art pack to Gumroad"""
+    def upload_clip_art_pack(self, pack_data, pdf_path):
+        """Upload a complete clip art pack to Gumroad as PDF"""
         pack_name = pack_data.get("pack_name", "Untitled Pack")
         category = pack_data.get("category", "general")
         price = pack_data.get("price", 499)
@@ -87,11 +82,14 @@ class GumroadUploader:
             name=pack_name,
             price_cents=price,
             description=description,
-            tags=tags,
-            file_path=str(zip_path)
+            tags=tags
         )
 
-        print(f"  Product created: {product.get('id')}")
+        if product.get("id"):
+            print(f"  Product created: {product['id']}")
+            self.upload_file(product["id"], pdf_path)
+            print(f"  PDF uploaded: {pdf_path}")
+
         return product
 
 

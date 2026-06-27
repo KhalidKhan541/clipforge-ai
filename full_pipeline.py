@@ -1,5 +1,5 @@
 """
-Full Pipeline — Groq → Pollinations → ZIP → Gumroad → Email Report
+Full Pipeline — Groq → Pollinations → PDF → Gumroad → Email Report
 Runs the entire clip art business on autopilot
 """
 import os
@@ -11,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -25,8 +27,8 @@ OUTPUT_DIR = Path(__file__).parent / "output"
 REPORTS_DIR = Path(__file__).parent / "reports"
 
 
-def send_email(subject, body):
-    """Send email report via Gmail SMTP"""
+def send_email(subject, body, attachment_path=None):
+    """Send email report via Gmail SMTP with optional PDF attachment"""
     sender = os.environ.get("SENDER_EMAIL")
     password = os.environ.get("GMAIL_APP_PASSWORD")
     recipient = sender
@@ -41,6 +43,17 @@ def send_email(subject, body):
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain"))
 
+    if attachment_path and Path(attachment_path).exists():
+        with open(attachment_path, "rb") as f:
+            part = MIMEBase("application", "pdf")
+            part.set_payload(f.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                f"attachment; filename={Path(attachment_path).name}"
+            )
+            msg.attach(part)
+
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender, password)
@@ -52,8 +65,8 @@ def send_email(subject, body):
         return False
 
 
-def generate_daily_report(packs_created, gumroad_results):
-    """Generate and send daily report"""
+def generate_daily_report(packs_created, gumroad_results, pdf_files):
+    """Generate and send daily report with PDF attachments"""
     now = datetime.now()
     report_lines = [
         f"=== ClipForge AI Daily Report ===",
@@ -75,7 +88,16 @@ def generate_daily_report(packs_created, gumroad_results):
 
     for result in gumroad_results:
         status = "SUCCESS" if result.get("product_id") else "FAILED"
-        report_lines.append(f"  {result['name']}: {status}")
+        url = result.get("url", "N/A")
+        report_lines.append(f"  {result['name']}: {status} - {url}")
+
+    report_lines.extend([
+        f"",
+        f"--- PDF Files Generated ---",
+    ])
+
+    for pdf in pdf_files:
+        report_lines.append(f"  {pdf}")
 
     report_lines.extend([
         f"",
@@ -97,7 +119,17 @@ def generate_daily_report(packs_created, gumroad_results):
         f.write(report)
 
     print(report)
-    send_email(f"ClipForge Report - {now.strftime('%Y-%m-%d')}", report)
+
+    for pdf_file in pdf_files:
+        if Path(pdf_file).exists():
+            send_email(
+                f"ClipForge Report - {now.strftime('%Y-%m-%d')}",
+                report,
+                attachment_path=pdf_file
+            )
+
+    if not pdf_files:
+        send_email(f"ClipForge Report - {now.strftime('%Y-%m-%d')}", report)
 
     return report
 
@@ -119,6 +151,7 @@ def run_pipeline(count=3):
 
     packs_created = []
     gumroad_results = []
+    pdf_files = []
 
     uploader = None
     if os.environ.get("GUMROAD_ACCESS_TOKEN"):
@@ -152,17 +185,20 @@ def run_pipeline(count=3):
             )
             print(f"  Generated {len(results)} images")
 
-            print("3. Creating ZIP file...")
-            zip_path = generator.create_zip(
+            print("3. Creating PDF file...")
+            pdf_path = generator.create_pdf(
                 str(OUTPUT_DIR / pack_name),
-                pack_name
+                pack_name,
+                cat_key,
+                pack
             )
-            print(f"  ZIP: {zip_path}")
+            print(f"  PDF: {pdf_path}")
+            pdf_files.append(str(pdf_path))
 
             if uploader:
                 print("4. Uploading to Gumroad...")
                 try:
-                    product = uploader.upload_clip_art_pack(pack, zip_path)
+                    product = uploader.upload_clip_art_pack(pack, pdf_path)
                     gumroad_results.append({
                         "name": pack_name,
                         "product_id": product.get("id"),
@@ -184,7 +220,7 @@ def run_pipeline(count=3):
 
     print("\n" + "=" * 50)
     print("Generating daily report...")
-    generate_daily_report(packs_created, gumroad_results)
+    generate_daily_report(packs_created, gumroad_results, pdf_files)
 
     print("\nPipeline complete!")
     return packs_created, gumroad_results

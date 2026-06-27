@@ -1,12 +1,17 @@
 """
 Image Generator — Uses Pollinations.ai (free, no API key) to generate clip art images
+Creates PDF files for Gumroad delivery
 """
 import os
 import time
 import urllib.request
 import urllib.parse
-import json
 from pathlib import Path
+
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
 
 class ImageGenerator:
@@ -60,19 +65,42 @@ class ImageGenerator:
 
         return generated
 
-    def create_zip(self, pack_dir, pack_name):
-        """Create a ZIP file from the pack directory"""
-        import zipfile
-        zip_path = self.output_dir / f"{pack_name}.zip"
+    def create_pdf(self, pack_dir, pack_name, category, pack_data=None):
+        """Create a PDF file from the pack images"""
+        pdf_path = self.output_dir / f"{pack_name}.pdf"
 
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(pack_dir):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(file_path, pack_dir)
-                    zipf.write(file_path, arcname)
+        c = canvas.Canvas(str(pdf_path), pagesize=A4)
+        width, height = A4
 
-        return zip_path
+        c.setFont("Helvetica-Bold", 24)
+        c.drawCentredString(width/2, height - 50, pack_name.replace("_", " ").title())
+
+        c.setFont("Helvetica", 12)
+        c.drawCentredString(width/2, height - 80, f"Category: {category}")
+
+        if pack_data:
+            price = pack_data.get("price", 4.99)
+            c.drawCentredString(width/2, height - 100, f"Price: ${price:.2f}")
+
+        c.showPage()
+
+        images_dir = Path(pack_dir) / "images"
+        if images_dir.exists():
+            for img_file in sorted(images_dir.glob("*.png")):
+                try:
+                    img = ImageReader(str(img_file))
+                    img_width = width - 100
+                    img_height = img_width
+                    x = 50
+                    y = height - 50 - img_height
+
+                    c.drawImage(img, x, y, width=img_width, height=img_height)
+                    c.showPage()
+                except Exception as e:
+                    print(f"  Error adding {img_file.name} to PDF: {e}")
+
+        c.save()
+        return pdf_path
 
 
 if __name__ == "__main__":
@@ -89,5 +117,5 @@ if __name__ == "__main__":
     print(f"Generated {len(results)} images")
 
     if results:
-        zip_path = generator.create_zip("output/test_pack", "test_pack")
-        print(f"ZIP created: {zip_path}")
+        pdf_path = generator.create_pdf("output/test_pack", "test_pack", "test")
+        print(f"PDF created: {pdf_path}")
