@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://www.paypal.com/sdk/js?client-id=test"></script>
+
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -106,7 +106,6 @@ section{padding:100px 0}
 .pack-meta{display:flex;align-items:center;justify-content:space-between}
 .pack-price{font-size:1.3rem;font-weight:800;background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .pack-count{font-size:.8rem;color:var(--text-muted)}
-.paypal-btn-container{margin-top:14px;min-height:45px}
 
 /* Categories */
 .categories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
@@ -308,7 +307,7 @@ ClipForge
 <div class="step-card reveal">
 <div class="step-number">2</div>
 <h3 class="step-title">Purchase Securely</h3>
-<p class="step-desc">Pay safely with PayPal. One-time purchase, no subscriptions. Instant confirmation after payment.</p>
+<p class="step-desc">Pay safely with Gumroad. One-time purchase, no subscriptions. Instant confirmation after payment.</p>
 </div>
 <div class="step-card reveal">
 <div class="step-number">3</div>
@@ -337,7 +336,7 @@ ClipForge
 <li>Instant Download</li>
 <li>Email Support</li>
 </ul>
-<button class="price-btn price-btn-secondary" onclick="payWithPayPal(2.99,'Starter Pack')">Get Starter</button>
+<button class="price-btn price-btn-secondary" onclick="window.open('https://gumroad.com/l/starter','_blank')">Get Starter</button>
 </div>
 <div class="price-card featured reveal">
 <div class="price-popular">Most Popular</div>
@@ -351,7 +350,7 @@ ClipForge
 <li>Priority Support</li>
 <li>Bonus Seasonal Pack</li>
 </ul>
-<button class="price-btn price-btn-primary" onclick="payWithPayPal(6.99,'Mega Pack')">Get Mega Pack</button>
+<button class="price-btn price-btn-primary" onclick="window.open('https://gumroad.com/l/mega','_blank')">Get Mega Pack</button>
 </div>
 <div class="price-card reveal">
 <h3 class="price-name">Ultimate Bundle</h3>
@@ -364,7 +363,7 @@ ClipForge
 <li>Priority Support</li>
 <li>All Future Packs Free</li>
 </ul>
-<button class="price-btn price-btn-secondary" onclick="payWithPayPal(9.99,'Ultimate Bundle')">Get Bundle</button>
+<button class="price-btn price-btn-secondary" onclick="window.open('https://gumroad.com/l/bundle','_blank')">Get Bundle</button>
 </div>
 </div>
 </div>
@@ -457,12 +456,12 @@ ClipForge
 
 <script>
 const PACKS=[
-{name:"Boho Floral Dreams",category:"Boho Florals",count:48,price:4.99,desc:"Soft, earthy floral arrangements perfect for wedding and boho designs.",gradient:"linear-gradient(135deg,#c084fc,#f0abfc)",badge:"new"},
-{name:"Kawaii Cuties",category:"Kawaii Cute",count:62,price:5.99,desc:"Adorable characters and elements that make everything sweeter.",gradient:"linear-gradient(135deg,#f472b6,#fb923c)",badge:"hot"},
-{name:"Retro Vibes Pack",category:"Vintage Retro",count:35,price:3.99,desc:"Groovy throwback designs with a modern twist.",gradient:"linear-gradient(135deg,#fbbf24,#f97316)",badge:"sale"},
-{name:"Watercolor Wonders",category:"Watercolor Elements",count:40,price:4.99,desc:"Beautiful hand-painted watercolor elements for elegant projects.",gradient:"linear-gradient(135deg,#60a5fa,#a78bfa)"},
-{name:"Planner Paradise",category:"Digital Planner",count:85,price:6.99,desc:"Stickers, dividers, and decorative elements for digital planners.",gradient:"linear-gradient(135deg,#34d399,#2dd4bf)",badge:"new"},
-{name:"Social Media Kit",category:"Social Media",count:55,price:5.99,desc:"Eye-catching graphics for Instagram, TikTok, and more.",gradient:"linear-gradient(135deg,#f43f5e,#a855f7)",badge:"new"}
+{name:"Boho Floral Dreams",category:"Boho Florals",count:48,price:4.99,desc:"Soft, earthy floral arrangements perfect for wedding and boho designs.",gradient:"linear-gradient(135deg,#c084fc,#f0abfc)",badge:"new",gumroad:"https://gumroad.com/l/boho-floral"},
+{name:"Kawaii Cuties",category:"Kawaii Cute",count:62,price:5.99,desc:"Adorable characters and elements that make everything sweeter.",gradient:"linear-gradient(135deg,#f472b6,#fb923c)",badge:"hot",gumroad:"https://gumroad.com/l/kawaii"},
+{name:"Retro Vibes Pack",category:"Vintage Retro",count:35,price:3.99,desc:"Groovy throwback designs with a modern twist.",gradient:"linear-gradient(135deg,#fbbf24,#f97316)",badge:"sale",gumroad:"https://gumroad.com/l/retro"},
+{name:"Watercolor Wonders",category:"Watercolor Elements",count:40,price:4.99,desc:"Beautiful hand-painted watercolor elements for elegant projects.",gradient:"linear-gradient(135deg,#60a5fa,#a78bfa)",gumroad:"https://gumroad.com/l/watercolor"},
+{name:"Planner Paradise",category:"Digital Planner",count:85,price:6.99,desc:"Stickers, dividers, and decorative elements for digital planners.",gradient:"linear-gradient(135deg,#34d399,#2dd4bf)",badge:"new",gumroad:"https://gumroad.com/l/planner"},
+{name:"Social Media Kit",category:"Social Media",count:55,price:5.99,desc:"Eye-catching graphics for Instagram, TikTok, and more.",gradient:"linear-gradient(135deg,#f43f5e,#a855f7)",badge:"new",gumroad:"https://gumroad.com/l/social"}
 ];
 
 const CATEGORIES=[
@@ -476,7 +475,7 @@ const CATEGORIES=[
 const FAQS=[
 {q:"What file format are the clip art files?",a:"All clip art files are provided as high-resolution PNG files with transparent backgrounds. They're ready to use in any design software, word processor, or online tool."},
 {q:"Can I use these for commercial projects?",a:"Yes! Our Mega Pack and Ultimate Bundle include commercial licenses. You can use the clip art in products you sell, client work, and marketing materials. The Starter pack is for personal use only."},
-{q:"How do I receive my files after purchase?",a:"After completing your PayPal payment, you'll receive an instant email with a download link. You can also access your purchased files from your account dashboard at any time."},
+{q:"How do I receive my files after purchase?",a:"After completing your Gumroad payment, you'll receive an instant email with a download link. You can also access your purchased files from your Gumroad library at any time."},
 {q:"Do you offer refunds?",a:"Due to the digital nature of our products, we generally don't offer refunds once files have been downloaded. However, if you experience any issues with your purchase, please contact us and we'll make it right."},
 {q:"How often do you add new clip art packs?",a:"We release new clip art packs weekly! Subscribe to our newsletter to get notified about new releases and exclusive discounts. Ultimate Bundle holders get all future packs for free."}
 ];
@@ -498,27 +497,11 @@ ${p.badge?`<span class="pack-badge badge-${p.badge}">${p.badge}</span>`:''}
 <div class="pack-price">$${p.price.toFixed(2)}</div>
 <div class="pack-count">${p.count} PNGs</div>
 </div>
-<div class="paypal-btn-container" id="paypal-${i}"></div>
+<a href="${p.gumroad || '#'}" target="_blank" rel="noopener" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px;text-decoration:none">Buy on Gumroad →</a>
 </div>
 </div>`).join('');
 if(filtered.length===0)grid.innerHTML='<p style="text-align:center;color:var(--text-muted);grid-column:1/-1;padding:40px">No packs found matching your search.</p>';
 initReveal();
-renderPayPalButtons(filtered);
-}
-
-function renderPayPalButtons(packs){
-packs.forEach((p,i)=>{
-setTimeout(()=>{
-const container=document.getElementById('paypal-'+i);
-if(!container)return;
-paypal.Buttons({
-style:{layout:'horizontal',color:'blue',shape:'rect',height:40},
-createOrder:function(data,actions){return actions.order.create({purchase_units:[{amount:{value:p.price.toFixed(2)},description:p.name+' - ClipForge AI'}]})},
-onApprove:function(data,actions){return actions.order.capture().then(function(){document.getElementById('downloadModal').classList.add('active')})},
-onError:function(){alert('Payment failed. Please try again.')}
-}).render('#paypal-'+i);
-},100);
-});
 }
 
 function renderCategories(){
@@ -549,15 +532,6 @@ items[i].classList.toggle('open');
 
 function filterPacks(){
 renderPacks(document.getElementById('searchInput').value.toLowerCase().trim());
-}
-
-function payWithPayPal(amount,name){
-paypal.Buttons({
-style:{layout:'horizontal',color:'blue',shape:'rect',height:45},
-createOrder:function(data,actions){return actions.order.create({purchase_units:[{amount:{value:amount.toFixed(2)},description:name+' - ClipForge AI'}]})},
-onApprove:function(data,actions){return actions.order.capture().then(function(){document.getElementById('downloadModal').classList.add('active')})},
-onError:function(){alert('Payment failed. Please try again.')}
-}).render('#pricing .price-btn');
 }
 
 function closeModal(){document.getElementById('downloadModal').classList.remove('active')}
