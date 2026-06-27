@@ -1,6 +1,6 @@
 """
-Image Generator — Uses Pollinations.ai (free, no API key) to generate clip art images
-Creates PDF files for Gumroad delivery
+Image Generator — Uses Pollinations.ai to generate clip art images
+Updated for new API (2026): gen.pollinations.ai/image/
 """
 import os
 import time
@@ -15,7 +15,7 @@ from reportlab.lib.utils import ImageReader
 
 
 class ImageGenerator:
-    BASE_URL = "https://image.pollinations.ai/prompt"
+    BASE_URL = "https://gen.pollinations.ai/image"
 
     def __init__(self, output_dir="output"):
         self.output_dir = Path(output_dir)
@@ -35,8 +35,13 @@ class ImageGenerator:
 
         try:
             print(f"  Generating: {filename}...")
-            urllib.request.urlretrieve(url, output_path)
-            time.sleep(2)
+            req = urllib.request.Request(url, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            with urllib.request.urlopen(req, timeout=60) as response:
+                with open(output_path, 'wb') as f:
+                    f.write(response.read())
+            time.sleep(3)
             return output_path
         except Exception as e:
             print(f"  Error generating {filename}: {e}")
