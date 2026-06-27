@@ -102,6 +102,14 @@ class GumroadUploader:
         resp.raise_for_status()
         return resp.json()
 
+    def publish_product(self, product_id):
+        """Publish a product so it becomes visible on Gumroad"""
+        data = {"published": "true"}
+        resp = requests.put(f"{self.API_BASE}/products/{product_id}",
+                            headers=self.headers, data=data)
+        resp.raise_for_status()
+        return resp.json()
+
     def upload_file(self, product_id, file_path):
         """Upload a file to a product using presigned URLs"""
         file_path = Path(file_path)
@@ -157,6 +165,8 @@ class GumroadUploader:
             print(f"  Product created: {product['id']}")
             self.upload_file(product["id"], pdf_path)
             print(f"  PDF uploaded: {pdf_path}")
+            self.publish_product(product["id"])
+            print(f"  Product published: {product['id']}")
 
         return product
 

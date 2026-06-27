@@ -1,9 +1,10 @@
 """
-Image Generator — Uses Pollinations.ai to generate clip art images
-Updated for new API (2026): gen.pollinations.ai/image/
+Image Generator — Uses AI Horde (free) to generate clip art images
+Creates PDF files for Gumroad delivery
 """
 import os
 import time
+import json
 import urllib.request
 import urllib.parse
 from pathlib import Path
@@ -15,34 +16,95 @@ from reportlab.lib.utils import ImageReader
 
 
 class ImageGenerator:
-    BASE_URL = "https://gen.pollinations.ai/image"
+    BASE_URL = "https://stablehorde.net/api/v2"
 
-    def __init__(self, output_dir="output"):
+    def __init__(self, output_dir="output", api_key=None):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.api_key = api_key or os.environ.get("AIHORDE_API_KEY", "0000000000")
 
-    def generate_image(self, prompt, filename, width=1024, height=1024, seed=None):
-        """Generate a single image using Pollinations.ai"""
-        enhanced_prompt = f"{prompt}, flat vector illustration, clean lines, white background, high resolution PNG, transparent background, clip art style"
+    def generate_image(self, prompt, filename, width=512, height=512):
+        """Generate a single image using AI Horde"""
+        enhanced_prompt = f"{prompt}, flat vector illustration, clean lines, white background, high resolution, clip art style, digital art"
 
-        encoded_prompt = urllib.parse.quote(enhanced_prompt)
-        url = f"{self.BASE_URL}/{encoded_prompt}?width={width}&height={height}&nologo=true"
+        data = json.dumps({
+            "prompt": enhanced_prompt,
+            "params": {
+                "width": width,
+                "height": height,
+                "steps": 30,
+                "cfg_scale": 7.5,
+                "sampler_name": "k_euler_a"
+            },
+            "nsfw": False,
+            "censor_nsfw": True,
+            "models": ["Anything Diffusion"]
+        }).encode('utf-8')
 
-        if seed:
-            url += f"&seed={seed}"
-
-        output_path = self.output_dir / filename
+        req = urllib.request.Request(
+            f"{self.BASE_URL}/generate/async",
+            data=data,
+            headers={
+                'Content-Type': 'application/json',
+                'apikey': self.api_key,
+                'User-Agent': 'ClipForgeAI/1.0'
+            },
+            method='POST'
+        )
 
         try:
-            print(f"  Generating: {filename}...")
-            req = urllib.request.Request(url, headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            })
-            with urllib.request.urlopen(req, timeout=60) as response:
-                with open(output_path, 'wb') as f:
-                    f.write(response.read())
-            time.sleep(3)
+            print(f"  Submitting: {filename}...")
+            with urllib.request.urlopen(req, timeout=30) as response:
+                result = json.loads(response.read())
+                job_id = result.get('id')
+
+            if not job_id:
+                print(f"  Error: No job ID returned")
+                return None
+
+            print(f"  Job {job_id} - waiting...")
+            for _ in range(120):
+                time.sleep(15)
+                check_req = urllib.request.Request(
+                    f"{self.BASE_URL}/generate/check/{job_id}",
+                    headers={'User-Agent': 'ClipForgeAI/1.0'}
+                )
+                with urllib.request.urlopen(check_req, timeout=10) as check_response:
+                    status = json.loads(check_response.read())
+
+                queue_pos = status.get('queue_position', '?')
+                wait_time = status.get('wait_time', '?')
+                print(f"    Queue: {queue_pos}, ETA: {wait_time}s", end='\r')
+
+                if status.get('done'):
+                    break
+                if status.get('faulted'):
+                    print(f"\n  Job failed")
+                    return None
+
+            print()
+            status_req = urllib.request.Request(
+                f"{self.BASE_URL}/generate/status/{job_id}",
+                headers={'User-Agent': 'ClipForgeAI/1.0'}
+            )
+            with urllib.request.urlopen(status_req, timeout=10) as status_response:
+                final_status = json.loads(status_response.read())
+
+            generations = final_status.get('generations', [])
+            if not generations:
+                print(f"  No images generated")
+                return None
+
+            image_url = generations[0].get('img')
+            if not image_url:
+                print(f"  No image URL")
+                return None
+
+            output_path = self.output_dir / filename
+            urllib.request.urlretrieve(image_url, str(output_path))
+            print(f"  Saved: {filename}")
             return output_path
+
         except Exception as e:
             print(f"  Error generating {filename}: {e}")
             return None
@@ -57,7 +119,7 @@ class ImageGenerator:
             prompt = prompt_data.get("prompt", prompt_data) if isinstance(prompt_data, dict) else prompt_data
             filename = f"{category}_{i+1:03d}.png"
 
-            result = self.generate_image(prompt, str(pack_dir / filename), seed=i)
+            result = self.generate_image(prompt, str(pack_dir / filename))
             if result:
                 generated.append({
                     "filename": filename,
@@ -66,7 +128,7 @@ class ImageGenerator:
                 })
 
             if (i + 1) % 10 == 0:
-                print(f"  Generated {i+1}/{len(prompts)} images")
+                print(f"  Progress: {i+1}/{len(prompts)} images")
 
         return generated
 
@@ -84,7 +146,7 @@ class ImageGenerator:
         c.drawCentredString(width/2, height - 80, f"Category: {category}")
 
         if pack_data:
-            price = pack_data.get("price", 4.99)
+            price = pack_data.get("price", 400) / 100
             c.drawCentredString(width/2, height - 100, f"Price: ${price:.2f}")
 
         c.showPage()
@@ -117,7 +179,7 @@ if __name__ == "__main__":
         "retro sunset gradient"
     ]
 
-    print("Testing Pollinations.ai image generation...")
+    print("Testing AI Horde image generation...")
     results = generator.generate_pack(test_prompts, "test_pack", "test")
     print(f"Generated {len(results)} images")
 

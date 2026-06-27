@@ -11,14 +11,13 @@
       "site_name": "clipforge-ai",
       "custom_domain": null
     },
-    "paypal": {
+    "gumroad": {
       "enabled": true,
-      "business_email": "khalid.khan46571@gmail.com",
-      "currency": "USD"
+      "currency": "usd"
     }
   },
   "generation": {
-    "packs_per_day": 3,
+    "packs_per_day": 1,
     "images_per_pack": 50,
     "categories": [
       "boho_florals",
@@ -39,9 +38,7 @@
     ],
     "image_style": "flat vector illustration, clean lines, white background, high resolution PNG, transparent background",
     "pricing": {
-      "starter_pack": 2.99,
-      "mega_pack": 6.99,
-      "bundle_pack": 9.99
+      "default_price_cents": 400
     }
   },
   "content": {
@@ -50,7 +47,7 @@
     "target_audience": "Etsy sellers, Canva designers, small business owners, teachers, crafters"
   },
   "delivery": {
-    "format": "PNG + PDF guide",
-    "platform": "Gumroad (free listing) + Cloudflare Pages (storefront)"
+    "format": "PDF",
+    "platform": "Gumroad"
   }
 }
