@@ -26,6 +26,9 @@ DATA_DIR = Path(__file__).parent / "data"
 OUTPUT_DIR = Path(__file__).parent / "output"
 REPORTS_DIR = Path(__file__).parent / "reports"
 
+IMAGES_PER_PACK = 50
+DEFAULT_PRICE_CENTS = 400
+
 
 def send_email(subject, body, attachment_path=None):
     """Send email report via Gmail SMTP with optional PDF attachment"""
@@ -77,7 +80,7 @@ def generate_daily_report(packs_created, gumroad_results, pdf_files):
 
     total_revenue_potential = 0
     for pack in packs_created:
-        price = pack.get("price", 499) / 100
+        price = pack.get("price", DEFAULT_PRICE_CENTS) / 100
         total_revenue_potential += price * 100
         report_lines.append(f"  {pack['pack_name']} - ${price:.2f} - {pack['category']}")
 
@@ -120,11 +123,13 @@ def generate_daily_report(packs_created, gumroad_results, pdf_files):
 
     print(report)
 
-    for pdf_file in pdf_files:
+    for i, pdf_file in enumerate(pdf_files):
         if Path(pdf_file).exists():
+            gumroad_url = gumroad_results[i].get("url", "N/A") if i < len(gumroad_results) else "N/A"
+            email_body = f"{report}\n\nGumroad Product URL: {gumroad_url}"
             send_email(
                 f"ClipForge Report - {now.strftime('%Y-%m-%d')}",
-                report,
+                email_body,
                 attachment_path=pdf_file
             )
 
@@ -166,11 +171,12 @@ def run_pipeline(count=3):
         print(f"\n--- {cat['name']} ---")
 
         print("1. Generating prompts with Groq...")
-        pack = generate_category_pack(client, config, cat_key, 1, 50)
+        pack = generate_category_pack(client, config, cat_key, 1, IMAGES_PER_PACK)
         if not pack:
             print(f"  Failed to generate prompts for {cat['name']}")
             continue
 
+        pack["price"] = DEFAULT_PRICE_CENTS
         pack_name = pack.get("pack_name", f"{cat_key}_pack")
 
         print("2. Generating images with Pollinations.ai...")
@@ -179,7 +185,7 @@ def run_pipeline(count=3):
 
         if prompts:
             results = generator.generate_pack(
-                [p.get("prompt", "") for p in prompts[:50]],
+                [p.get("prompt", "") for p in prompts[:IMAGES_PER_PACK]],
                 pack_name,
                 cat_key
             )
@@ -196,14 +202,16 @@ def run_pipeline(count=3):
             pdf_files.append(str(pdf_path))
 
             if uploader:
-                print("4. Uploading to Gumroad...")
+                print("4. Uploading to Gumroad and publishing...")
                 try:
                     product = uploader.upload_clip_art_pack(pack, pdf_path)
+                    gumroad_url = product.get("url", "")
                     gumroad_results.append({
                         "name": pack_name,
                         "product_id": product.get("id"),
-                        "url": product.get("url")
+                        "url": gumroad_url
                     })
+                    print(f"  Published: {gumroad_url}")
                 except Exception as e:
                     print(f"  Upload error: {e}")
                     gumroad_results.append({
