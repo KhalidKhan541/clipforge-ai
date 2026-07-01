@@ -162,8 +162,15 @@ def generate_single_listing(
         return None
     except APIStatusError as e:
         if e.status_code == 429:
-            wait = RETRY_DELAY * (retry + 1) * 2
-            print(f"    [WARN] Rate limited, waiting {wait}s...")
+            # Parse the suggested wait time from the error message
+            import re
+            wait_match = re.search(r'Please try again in (\d+)m(\d+\.?\d*)s', str(e.message))
+            if wait_match:
+                wait = int(wait_match.group(1)) * 60 + float(wait_match.group(2))
+                wait = min(wait, 300)  # Cap at 5 minutes
+            else:
+                wait = RETRY_DELAY * (retry + 1) * 5
+            print(f"    [WARN] Rate limited, waiting {wait:.0f}s...")
             if retry < MAX_RETRIES:
                 time.sleep(wait)
                 return generate_single_listing(client, system_prompt, user_prompt, retry + 1)

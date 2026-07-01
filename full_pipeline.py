@@ -16,6 +16,9 @@ from email import encoders
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent / ".env")
+
 from prompt_library import CATEGORIES, get_prompts_for_category
 from generator import generate_category_pack, get_groq_client, load_config
 from image_generator import ImageGenerator
@@ -36,8 +39,11 @@ def send_email(subject, body, attachment_path=None):
     password = os.environ.get("GMAIL_APP_PASSWORD")
     recipient = sender
 
-    if not sender or not password:
-        print("Email credentials not set, skipping email")
+    if not sender:
+        print("ERROR: SENDER_EMAIL environment variable not set. Email skipped.")
+        return False
+    if not password:
+        print("ERROR: GMAIL_APP_PASSWORD environment variable not set. Email skipped.")
         return False
 
     msg = MIMEMultipart()
@@ -61,10 +67,16 @@ def send_email(subject, body, attachment_path=None):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender, password)
             server.send_message(msg)
-        print(f"Email sent: {subject}")
+        print(f"Email sent successfully: {subject}")
         return True
+    except smtplib.SMTPAuthenticationError:
+        print("ERROR: Gmail authentication failed. Check SENDER_EMAIL and GMAIL_APP_PASSWORD.")
+        return False
+    except smtplib.SMTPException as e:
+        print(f"ERROR: SMTP error sending email: {e}")
+        return False
     except Exception as e:
-        print(f"Email error: {e}")
+        print(f"ERROR: Failed to send email: {type(e).__name__}: {e}")
         return False
 
 
@@ -141,6 +153,11 @@ def generate_daily_report(packs_created, gumroad_results, pdf_files):
 
 def run_pipeline(count=3):
     """Run the full pipeline"""
+    import time as _time
+    PIPELINE_START = _time.time()
+    # Leave 1 hour buffer before the 6h GitHub Actions timeout for report + email
+    DEADLINE = PIPELINE_START + 5 * 3600
+
     print("=" * 50)
     print("ClipForge AI - Full Pipeline")
     print("=" * 50)
@@ -166,78 +183,90 @@ def run_pipeline(count=3):
         except Exception as e:
             print(f"Gumroad error: {e}")
 
-    for cat_key in selected:
-        cat = CATEGORIES[cat_key]
-        print(f"\n--- {cat['name']} ---")
+    try:
+        for cat_key in selected:
+            if _time.time() > DEADLINE:
+                print(f"\nTime budget exhausted ({(_time.time() - PIPELINE_START)/3600:.1f}h elapsed), stopping image generation")
+                break
 
-        print("1. Generating prompts with Groq...")
-        pack = generate_category_pack(client, config, cat_key, 1, IMAGES_PER_PACK)
-        if not pack:
-            print(f"  Failed to generate prompts for {cat['name']}")
-            continue
+            cat = CATEGORIES[cat_key]
+            print(f"\n--- {cat['name']} ---")
 
-        pack["price"] = DEFAULT_PRICE_CENTS
-        pack_name = pack.get("pack_name", f"{cat_key}_pack")
+            print("1. Generating prompts with Groq...")
+            pack = generate_category_pack(client, config, cat_key, 1, IMAGES_PER_PACK)
+            if not pack:
+                print(f"  Failed to generate prompts for {cat['name']}")
+                continue
 
-        print("2. Generating images with Pollinations.ai...")
-        generator = ImageGenerator(str(OUTPUT_DIR))
-        prompts = pack.get("prompts", [])
+            pack["price"] = DEFAULT_PRICE_CENTS
+            pack_name = pack.get("pack_name", f"{cat_key}_pack")
 
-        if prompts:
-            results = generator.generate_pack(
-                [p.get("prompt", "") for p in prompts[:IMAGES_PER_PACK]],
-                pack_name,
-                cat_key
-            )
-            print(f"  Generated {len(results)} images")
+            remaining = DEADLINE - _time.time()
+            print(f"2. Generating images with AI Horde... ({remaining/60:.0f}min budget left)")
+            generator = ImageGenerator(str(OUTPUT_DIR))
+            prompts = pack.get("prompts", [])
 
-            print("3. Creating PDF file...")
-            pdf_path = generator.create_pdf(
-                str(OUTPUT_DIR / pack_name),
-                pack_name,
-                cat_key,
-                pack
-            )
-            print(f"  PDF: {pdf_path}")
-            pdf_files.append(str(pdf_path))
+            if prompts:
+                results = generator.generate_pack(
+                    [p.get("prompt", "") for p in prompts[:IMAGES_PER_PACK]],
+                    pack_name,
+                    cat_key,
+                    deadline=DEADLINE
+                )
+                print(f"  Generated {len(results)} images")
 
-            if uploader:
-                print("4. Uploading to Gumroad and publishing...")
-                try:
-                    product = uploader.upload_clip_art_pack(pack, pdf_path)
-                    gumroad_url = product.get("url", "")
-                    gumroad_results.append({
-                        "name": pack_name,
-                        "product_id": product.get("id"),
-                        "url": gumroad_url
-                    })
-                    print(f"  Published: {gumroad_url}")
-                except Exception as e:
-                    print(f"  Upload error: {e}")
-                    gumroad_results.append({
-                        "name": pack_name,
-                        "product_id": None,
-                        "error": str(e)
-                    })
+                print("3. Creating PDF file...")
+                pdf_path = generator.create_pdf(
+                    str(OUTPUT_DIR / pack_name),
+                    pack_name,
+                    cat_key,
+                    pack
+                )
+                print(f"  PDF: {pdf_path}")
+                pdf_files.append(str(pdf_path))
 
-        packs_created.append(pack)
+                if uploader:
+                    print("4. Uploading to Gumroad and publishing...")
+                    try:
+                        product = uploader.upload_clip_art_pack(pack, pdf_path)
+                        gumroad_url = product.get("url", "")
+                        gumroad_results.append({
+                            "name": pack_name,
+                            "product_id": product.get("id"),
+                            "url": gumroad_url
+                        })
+                        print(f"  Published: {gumroad_url}")
+                    except Exception as e:
+                        print(f"  Upload error: {e}")
+                        gumroad_results.append({
+                            "name": pack_name,
+                            "product_id": None,
+                            "error": str(e)
+                        })
 
-        pack_file = DATA_DIR / f"{pack_name}.json"
-        with open(pack_file, "w") as f:
-            json.dump(pack, f, indent=2)
+            packs_created.append(pack)
+
+            pack_file = DATA_DIR / f"{pack_name}.json"
+            with open(pack_file, "w") as f:
+                json.dump(pack, f, indent=2)
+    except KeyboardInterrupt:
+        print("\nPipeline interrupted, generating report with partial results...")
+    except Exception as e:
+        print(f"\nPipeline error: {e}, generating report with partial results...")
 
     print("\n" + "=" * 50)
     print("Generating daily report...")
     generate_daily_report(packs_created, gumroad_results, pdf_files)
 
-    print("\nPipeline complete!")
+    elapsed = _time.time() - PIPELINE_START
+    print(f"\nPipeline complete! ({elapsed/60:.1f} minutes)")
     return packs_created, gumroad_results
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="ClipForge AI Pipeline")
-    parser.add_argument("--count", type=int, default=3, help="Number of packs")
+    parser.add_argument("--count", type=int, default=1, help="Number of packs")
     args = parser.parse_args()
 
     run_pipeline(count=args.count)

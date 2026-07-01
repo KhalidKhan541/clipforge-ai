@@ -25,8 +25,9 @@ class ImageGenerator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.api_key = api_key or os.environ.get("AIHORDE_API_KEY", "0000000000")
 
-    def generate_image(self, prompt, output_path, width=512, height=512, retries=3):
-        """Generate a single image using AI Horde. Saves as actual PNG."""
+    def generate_image(self, prompt, output_path, width=512, height=512, retries=3, deadline=None):
+        """Generate a single image using AI Horde. Saves as actual PNG.
+        deadline: optional time.time() timestamp; abort if exceeded."""
         enhanced_prompt = f"{prompt}, flat vector illustration, clean lines, white background, high resolution, clip art style, digital art"
 
         data = json.dumps({
@@ -44,6 +45,9 @@ class ImageGenerator:
         }).encode('utf-8')
 
         for attempt in range(retries):
+            if deadline and time.time() > deadline:
+                print(f"  Deadline reached, skipping {Path(output_path).name}")
+                return None
             try:
                 req = urllib.request.Request(
                     f"{self.BASE_URL}/generate/async",
@@ -57,7 +61,7 @@ class ImageGenerator:
                 )
 
                 print(f"  Submitting: {Path(output_path).name} (attempt {attempt+1})...")
-                with urllib.request.urlopen(req, timeout=30) as response:
+                with urllib.request.urlopen(req, timeout=60) as response:
                     result = json.loads(response.read())
                     job_id = result.get('id')
 
@@ -67,12 +71,15 @@ class ImageGenerator:
 
                 print(f"  Job {job_id} - waiting...")
                 for _ in range(120):
+                    if deadline and time.time() > deadline:
+                        print(f"\n  Deadline reached during poll for {Path(output_path).name}")
+                        return None
                     time.sleep(15)
                     check_req = urllib.request.Request(
                         f"{self.BASE_URL}/generate/check/{job_id}",
                         headers={'User-Agent': 'ClipForgeAI/1.0'}
                     )
-                    with urllib.request.urlopen(check_req, timeout=10) as check_response:
+                    with urllib.request.urlopen(check_req, timeout=30) as check_response:
                         status = json.loads(check_response.read())
 
                     queue_pos = status.get('queue_position', '?')
@@ -90,7 +97,7 @@ class ImageGenerator:
                     f"{self.BASE_URL}/generate/status/{job_id}",
                     headers={'User-Agent': 'ClipForgeAI/1.0'}
                 )
-                with urllib.request.urlopen(status_req, timeout=10) as status_response:
+                with urllib.request.urlopen(status_req, timeout=30) as status_response:
                     final_status = json.loads(status_response.read())
 
                 generations = final_status.get('generations', [])
@@ -103,7 +110,7 @@ class ImageGenerator:
                     print(f"  No image URL")
                     continue
 
-                img_data = urllib.request.urlopen(image_url, timeout=30).read()
+                img_data = urllib.request.urlopen(image_url, timeout=60).read()
                 img = Image.open(io.BytesIO(img_data))
                 if img.mode in ('RGBA', 'P'):
                     img = img.convert('RGB')
@@ -114,22 +121,26 @@ class ImageGenerator:
             except Exception as e:
                 print(f"  Error attempt {attempt+1}: {e}")
                 if attempt < retries - 1:
-                    time.sleep(5)
+                    time.sleep(10 * (attempt + 1))
 
         return None
 
-    def generate_pack(self, prompts, pack_name, category):
-        """Generate a full pack of images"""
+    def generate_pack(self, prompts, pack_name, category, deadline=None):
+        """Generate a full pack of images.
+        deadline: optional time.time() timestamp; abort if exceeded."""
         pack_dir = self.output_dir / pack_name / "images"
         pack_dir.mkdir(parents=True, exist_ok=True)
 
         generated = []
         for i, prompt_data in enumerate(prompts):
+            if deadline and time.time() > deadline:
+                print(f"  Deadline reached, stopping image generation after {len(generated)} images")
+                break
             prompt = prompt_data.get("prompt", prompt_data) if isinstance(prompt_data, dict) else prompt_data
             filename = f"{category}_{i+1:03d}.png"
             output_path = pack_dir / filename
 
-            result = self.generate_image(prompt, str(output_path))
+            result = self.generate_image(prompt, str(output_path), deadline=deadline)
             if result:
                 generated.append({
                     "filename": filename,

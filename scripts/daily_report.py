@@ -17,6 +17,9 @@ from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
+
+from dotenv import load_dotenv
+load_dotenv(PROJECT_ROOT / ".env")
 CONFIG_PATH = PROJECT_ROOT / "config.json"
 DATA_DIR = PROJECT_ROOT / "data"
 REPORTS_DIR = PROJECT_ROOT / "reports"
