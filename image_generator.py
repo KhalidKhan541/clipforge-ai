@@ -1,6 +1,6 @@
 """
 Image Generator — Uses AI Horde (free) to generate clip art images
-Creates PDF files for Gumroad delivery
+Generates at 1024x1024 and upscales to meet Wirestock requirements (6MP+)
 """
 import os
 import time
@@ -11,23 +11,20 @@ import urllib.parse
 from pathlib import Path
 
 from PIL import Image
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
 
 
 class ImageGenerator:
     BASE_URL = "https://stablehorde.net/api/v2"
+    MIN_MP = 6_000_000  # 6 megapixels minimum for Wirestock
+    TARGET_SIZE = 3000  # 3000px on longest side
 
     def __init__(self, output_dir="output", api_key=None):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.api_key = api_key or os.environ.get("AIHORDE_API_KEY", "0000000000")
 
-    def generate_image(self, prompt, output_path, width=512, height=512, retries=3, deadline=None):
-        """Generate a single image using AI Horde. Saves as actual PNG.
-        deadline: optional time.time() timestamp; abort if exceeded."""
+    def generate_image(self, prompt, output_path, width=1024, height=1024, retries=3, deadline=None):
+        """Generate a single image using AI Horde. Generates at 1024x1024 minimum."""
         enhanced_prompt = f"{prompt}, flat vector illustration, clean lines, white background, high resolution, clip art style, digital art"
 
         data = json.dumps({
@@ -72,7 +69,7 @@ class ImageGenerator:
                 print(f"  Job {job_id} - waiting...")
                 for _ in range(120):
                     if deadline and time.time() > deadline:
-                        print(f"\n  Deadline reached during poll for {Path(output_path).name}")
+                        print(f"\n  Deadline reached during poll")
                         return None
                     time.sleep(15)
                     check_req = urllib.request.Request(
@@ -114,8 +111,12 @@ class ImageGenerator:
                 img = Image.open(io.BytesIO(img_data))
                 if img.mode in ('RGBA', 'P'):
                     img = img.convert('RGB')
+
+                # Upscale to meet Wirestock requirements (6MP+, 3000px+)
+                img = self._upscale_for_wirestock(img)
+
                 img.save(output_path, 'PNG', quality=95)
-                print(f"  Saved: {Path(output_path).name}")
+                print(f"  Saved: {Path(output_path).name} ({img.size[0]}x{img.size[1]})")
                 return output_path
 
             except Exception as e:
@@ -125,16 +126,46 @@ class ImageGenerator:
 
         return None
 
+    def _upscale_for_wirestock(self, img):
+        """Upscale image to meet Wirestock minimum requirements (6MP+, 3000px+)"""
+        width, height = img.size
+        current_mp = width * height
+
+        # Already meets requirements
+        if width >= self.TARGET_SIZE and height >= self.TARGET_SIZE and current_mp >= self.MIN_MP:
+            return img
+
+        # Calculate scale factor
+        scale_w = self.TARGET_SIZE / width if width < self.TARGET_SIZE else 1
+        scale_h = self.TARGET_SIZE / height if height < self.TARGET_SIZE else 1
+        scale = max(scale_w, scale_h, 1.0)
+
+        # Ensure minimum megapixels
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        if new_width * new_height < self.MIN_MP:
+            # Increase size to meet minimum
+            import math
+            scale_mp = math.sqrt(self.MIN_MP / (width * height))
+            scale = max(scale, scale_mp)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+
+        if scale > 1.0:
+            img = img.resize((new_width, new_height), Image.LANCZOS)
+            print(f"    Upscaled: {width}x{height} -> {new_width}x{new_height}")
+
+        return img
+
     def generate_pack(self, prompts, pack_name, category, deadline=None):
-        """Generate a full pack of images.
-        deadline: optional time.time() timestamp; abort if exceeded."""
+        """Generate a full pack of images."""
         pack_dir = self.output_dir / pack_name / "images"
         pack_dir.mkdir(parents=True, exist_ok=True)
 
         generated = []
         for i, prompt_data in enumerate(prompts):
             if deadline and time.time() > deadline:
-                print(f"  Deadline reached, stopping image generation after {len(generated)} images")
+                print(f"  Deadline reached, stopping after {len(generated)} images")
                 break
             prompt = prompt_data.get("prompt", prompt_data) if isinstance(prompt_data, dict) else prompt_data
             filename = f"{category}_{i+1:03d}.png"
@@ -153,48 +184,6 @@ class ImageGenerator:
 
         return generated
 
-    def create_pdf(self, pack_dir, pack_name, category, pack_data=None):
-        """Create a PDF file from the pack images"""
-        pdf_path = self.output_dir / f"{pack_name}.pdf"
-
-        c = canvas.Canvas(str(pdf_path), pagesize=A4)
-        width, height = A4
-
-        c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(width/2, height - 50, pack_name.replace("_", " ").title())
-
-        c.setFont("Helvetica", 12)
-        c.drawCentredString(width/2, height - 80, f"Category: {category}")
-
-        if pack_data:
-            price = pack_data.get("price", 400) / 100
-            c.drawCentredString(width/2, height - 100, f"Price: ${price:.2f}")
-
-        c.showPage()
-
-        images_dir = Path(pack_dir) / "images"
-        image_count = 0
-        if images_dir.exists():
-            for img_file in sorted(images_dir.glob("*.*")):
-                if img_file.suffix.lower() not in ('.png', '.jpg', '.jpeg', '.webp'):
-                    continue
-                try:
-                    img = ImageReader(str(img_file))
-                    img_width = width - 100
-                    img_height = img_width
-                    x = 50
-                    y = height - 50 - img_height
-
-                    c.drawImage(img, x, y, width=img_width, height=img_height)
-                    c.showPage()
-                    image_count += 1
-                except Exception as e:
-                    print(f"  Error adding {img_file.name} to PDF: {e}")
-
-        c.save()
-        print(f"  PDF created with {image_count} images: {pdf_path}")
-        return pdf_path
-
 
 if __name__ == "__main__":
     generator = ImageGenerator()
@@ -208,7 +197,3 @@ if __name__ == "__main__":
     print("Testing AI Horde image generation...")
     results = generator.generate_pack(test_prompts, "test_pack", "test")
     print(f"Generated {len(results)} images")
-
-    if results:
-        pdf_path = generator.create_pdf("output/test_pack", "test_pack", "test")
-        print(f"PDF created: {pdf_path}")
