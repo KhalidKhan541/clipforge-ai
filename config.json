@@ -18,7 +18,7 @@
   },
   "generation": {
     "packs_per_day": 1,
-    "images_per_pack": 50,
+    "images_per_pack": 20,
     "categories": [
       "boho_florals",
       "kawaii_cute",
@@ -47,7 +47,7 @@
     "target_audience": "Etsy sellers, Canva designers, small business owners, teachers, crafters"
   },
   "delivery": {
-    "format": "PDF",
+    "format": "ZIP",
     "platform": "Gumroad"
   }
 }
