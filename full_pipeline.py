@@ -6,6 +6,8 @@ import sys
 import json
 import random
 import smtplib
+import time
+import functools
 import zipfile
 from pathlib import Path
 from datetime import datetime
@@ -13,6 +15,27 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+
+
+def retry_with_backoff(max_retries=3, base_delay=2, max_delay=30):
+    """Retry decorator with exponential backoff."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    delay = min(base_delay * (2 ** attempt), max_delay)
+                    print(f"  Attempt {attempt + 1}/{max_retries} failed: {e}")
+                    if attempt < max_retries - 1:
+                        print(f"  Retrying in {delay}s...")
+                        time.sleep(delay)
+            raise last_exception
+        return wrapper
+    return decorator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -193,19 +216,27 @@ def run_pipeline(count=3):
             prompts = pack.get("prompts", [])
 
             if prompts:
-                results = generator.generate_pack(
-                    [p.get("prompt", "") for p in prompts[:IMAGES_PER_PACK]],
-                    pack_name,
-                    cat_key,
-                    deadline=DEADLINE
-                )
-                print(f"  Generated {len(results)} images")
+                try:
+                    results = generator.generate_pack(
+                        [p.get("prompt", "") for p in prompts[:IMAGES_PER_PACK]],
+                        pack_name,
+                        cat_key,
+                        deadline=DEADLINE
+                    )
+                    print(f"  Generated {len(results)} images")
+                except Exception as e:
+                    print(f"  Image generation failed for {cat['name']}: {e}")
+                    packs_created.append(pack)
+                    continue
 
-                print("3. Creating ZIP file...")
-                zip_path = ZIP_DIR / f"{pack_name}.zip"
-                pack_dir = OUTPUT_DIR / pack_name
-                create_zip(pack_dir, pack_name, zip_path)
-                zip_files.append(str(zip_path))
+                try:
+                    print("3. Creating ZIP file...")
+                    zip_path = ZIP_DIR / f"{pack_name}.zip"
+                    pack_dir = OUTPUT_DIR / pack_name
+                    create_zip(pack_dir, pack_name, zip_path)
+                    zip_files.append(str(zip_path))
+                except Exception as e:
+                    print(f"  ZIP creation failed for {cat['name']}: {e}")
 
             packs_created.append(pack)
 

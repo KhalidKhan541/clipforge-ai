@@ -6,11 +6,33 @@ import os
 import time
 import json
 import io
+import functools
 import urllib.request
 import urllib.parse
 from pathlib import Path
 
 from PIL import Image
+
+
+def retry_with_backoff(max_retries=3, base_delay=2, max_delay=30):
+    """Retry decorator with exponential backoff."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    delay = min(base_delay * (2 ** attempt), max_delay)
+                    print(f"  Attempt {attempt + 1}/{max_retries} failed: {e}")
+                    if attempt < max_retries - 1:
+                        print(f"  Retrying in {delay}s...")
+                        time.sleep(delay)
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class ImageGenerator:
@@ -23,6 +45,7 @@ class ImageGenerator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.api_key = api_key or os.environ.get("AIHORDE_API_KEY", "0000000000")
 
+    @retry_with_backoff(max_retries=3, base_delay=5, max_delay=60)
     def generate_image(self, prompt, output_path, width=1024, height=1024, retries=3, deadline=None):
         """Generate a single image using AI Horde. Generates at 1024x1024 minimum."""
         enhanced_prompt = f"{prompt}, flat vector illustration, clean lines, white background, high resolution, clip art style, digital art"
