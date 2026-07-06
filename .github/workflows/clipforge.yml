@@ -38,6 +38,8 @@ jobs:
           pip install groq Pillow requests python-dotenv
 
       - name: Health Check
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           python harness/health_check.py quick || {
             echo "Health check failed — aborting pipeline"
