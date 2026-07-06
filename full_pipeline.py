@@ -28,7 +28,7 @@ OUTPUT_DIR = Path(__file__).parent / "output"
 REPORTS_DIR = Path(__file__).parent / "reports"
 ZIP_DIR = Path(__file__).parent / "zips"
 
-IMAGES_PER_PACK = 50
+IMAGES_PER_PACK = None  # Will be read from config
 
 
 def send_email(subject, body, attachment_path=None):
@@ -159,6 +159,9 @@ def run_pipeline(count=3):
 
     config = load_config()
     client = get_groq_client()
+
+    global IMAGES_PER_PACK
+    IMAGES_PER_PACK = config.get("generation", {}).get("images_per_pack", 20)
 
     category_keys = list(CATEGORIES.keys())
     selected = random.sample(category_keys, min(count, len(category_keys)))
