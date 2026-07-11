@@ -18,7 +18,7 @@
   },
   "generation": {
     "packs_per_day": 1,
-    "images_per_pack": 20,
+    "images_per_pack": 8,
     "categories": [
       "boho_florals",
       "kawaii_cute",

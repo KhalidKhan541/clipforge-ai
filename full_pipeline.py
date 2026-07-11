@@ -8,6 +8,7 @@ import random
 import smtplib
 import time
 import functools
+import io
 import zipfile
 from pathlib import Path
 from datetime import datetime
@@ -15,6 +16,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+
+from PIL import Image
+
+
+GMAIL_MAX_MB = 25
 
 
 def retry_with_backoff(max_retries=3, base_delay=2, max_delay=30):
@@ -55,7 +61,7 @@ IMAGES_PER_PACK = None  # Will be read from config
 
 
 def send_email(subject, body, attachment_path=None):
-    """Send email with optional ZIP attachment"""
+    """Send email with optional ZIP attachment (must be under 25 MB for Gmail)."""
     sender = os.environ.get("SENDER_EMAIL")
     password = os.environ.get("GMAIL_APP_PASSWORD")
     recipient = sender
@@ -71,6 +77,19 @@ def send_email(subject, body, attachment_path=None):
     msg.attach(MIMEText(body, "plain"))
 
     if attachment_path and Path(attachment_path).exists():
+        size_mb = Path(attachment_path).stat().st_size / (1024 * 1024)
+        if size_mb > GMAIL_MAX_MB:
+            print(f"  ZIP is {size_mb:.1f} MB, exceeds {GMAIL_MAX_MB} MB limit.")
+            print("  Attempting to recompress at quality 50...")
+            attachment_path = _recompress_zip(attachment_path, quality=50)
+            if attachment_path is None:
+                print("  ERROR: Could not reduce ZIP under limit. Skipping email.")
+                return False
+            size_mb = Path(attachment_path).stat().st_size / (1024 * 1024)
+            if size_mb > GMAIL_MAX_MB:
+                print(f"  Still {size_mb:.1f} MB after recompress. Skipping email.")
+                return False
+
         with open(attachment_path, "rb") as f:
             part = MIMEBase("application", "zip")
             part.set_payload(f.read())
@@ -92,22 +111,63 @@ def send_email(subject, body, attachment_path=None):
         return False
 
 
+def _recompress_zip(zip_path, quality=50):
+    """Recompress every image inside the ZIP at lower quality. Returns new path or None."""
+    original = Path(zip_path)
+    recompressed = original.with_name(original.stem + "_compressed.zip")
+    try:
+        with zipfile.ZipFile(original, "r") as zf_in, \
+             zipfile.ZipFile(recompressed, "w", zipfile.ZIP_DEFLATED) as zf_out:
+            for item in zf_in.infolist():
+                data = zf_in.read(item.filename)
+                if item.filename.lower().endswith((".png", ".jpg", ".jpeg")):
+                    try:
+                        img = Image.open(io.BytesIO(data))
+                        if img.mode in ("RGBA", "P"):
+                            img = img.convert("RGB")
+                        buf = io.BytesIO()
+                        img.save(buf, format="JPEG", quality=quality, optimize=True)
+                        data = buf.getvalue()
+                        out_name = Path(item.filename).stem + ".jpg"
+                    except Exception:
+                        out_name = item.filename
+                else:
+                    out_name = item.filename
+                zf_out.writestr(out_name, data)
+        return recompressed
+    except Exception as e:
+        print(f"  Recompress failed: {e}")
+        return None
+
+
+def compress_image(src_path, quality=75):
+    """Compress an image to JPEG at the given quality, returning bytes."""
+    img = Image.open(src_path)
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality, optimize=True)
+    return buf.getvalue()
+
+
 def create_zip(pack_dir, pack_name, zip_path):
-    """Create ZIP from pack images"""
+    """Create ZIP from pack images, compressing to JPEG quality 75."""
     images_dir = Path(pack_dir) / "images"
     if not images_dir.exists():
         print(f"  No images directory found at {images_dir}")
         return None
 
-    image_files = list(images_dir.glob("*.png")) + list(images_dir.glob("*.jpg"))
+    image_files = list(images_dir.glob("*.png")) + list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.jpeg"))
     if not image_files:
         print(f"  No images found in {images_dir}")
         return None
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for img_file in sorted(image_files):
-            zf.write(img_file, img_file.name)
-            print(f"    Added: {img_file.name}")
+            jpeg_data = compress_image(img_file, quality=75)
+            jpeg_name = img_file.stem + ".jpg"
+            zf.writestr(jpeg_name, jpeg_data)
+            print(f"    Added: {jpeg_name} ({len(jpeg_data) / 1024:.0f} KB)")
 
     size_mb = zip_path.stat().st_size / (1024 * 1024)
     print(f"  ZIP created: {zip_path.name} ({size_mb:.1f} MB, {len(image_files)} images)")
