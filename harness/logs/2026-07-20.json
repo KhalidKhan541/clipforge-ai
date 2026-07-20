@@ -1,0 +1,27 @@
+[
+  {
+    "timestamp": "2026-07-20T05:57:35.706946",
+    "mode": "quick",
+    "apis": {
+      "pollinations": {
+        "name": "Pollinations.ai (Image Generation)",
+        "status": "ok",
+        "latency_ms": 479,
+        "error": null
+      },
+      "smtp": {
+        "name": "Gmail SMTP",
+        "status": "ok",
+        "latency_ms": 490,
+        "error": null
+      }
+    },
+    "dependencies": {},
+    "disk": {
+      "total_gb": 144.3,
+      "free_gb": 87.6,
+      "warning": false
+    },
+    "overall": "healthy"
+  }
+]
