@@ -80,8 +80,8 @@ def send_email(subject, body, attachment_path=None):
         size_mb = Path(attachment_path).stat().st_size / (1024 * 1024)
         if size_mb > GMAIL_MAX_MB:
             print(f"  ZIP is {size_mb:.1f} MB, exceeds {GMAIL_MAX_MB} MB limit.")
-            print("  Attempting to recompress at quality 50...")
-            attachment_path = _recompress_zip(attachment_path, quality=50)
+            print("  Attempting to recompress at quality 60...")
+            attachment_path = _recompress_zip(attachment_path, quality=60)
             if attachment_path is None:
                 print("  ERROR: Could not reduce ZIP under limit. Skipping email.")
                 return False
@@ -111,7 +111,7 @@ def send_email(subject, body, attachment_path=None):
         return False
 
 
-def _recompress_zip(zip_path, quality=50):
+def _recompress_zip(zip_path, quality=60):
     """Recompress every image inside the ZIP at lower quality. Returns new path or None."""
     original = Path(zip_path)
     recompressed = original.with_name(original.stem + "_compressed.zip")
@@ -140,7 +140,7 @@ def _recompress_zip(zip_path, quality=50):
         return None
 
 
-def compress_image(src_path, quality=75):
+def compress_image(src_path, quality=85):
     """Compress an image to JPEG at the given quality, returning bytes."""
     img = Image.open(src_path)
     if img.mode in ("RGBA", "P"):
@@ -151,7 +151,7 @@ def compress_image(src_path, quality=75):
 
 
 def create_zip(pack_dir, pack_name, zip_path):
-    """Create ZIP from pack images, compressing to JPEG quality 75."""
+    """Create ZIP from pack images, compressing to JPEG quality 85."""
     images_dir = Path(pack_dir) / "images"
     if not images_dir.exists():
         print(f"  No images directory found at {images_dir}")
@@ -164,7 +164,7 @@ def create_zip(pack_dir, pack_name, zip_path):
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for img_file in sorted(image_files):
-            jpeg_data = compress_image(img_file, quality=75)
+            jpeg_data = compress_image(img_file, quality=85)
             jpeg_name = img_file.stem + ".jpg"
             zf.writestr(jpeg_name, jpeg_data)
             print(f"    Added: {jpeg_name} ({len(jpeg_data) / 1024:.0f} KB)")
