@@ -10,6 +10,7 @@ import time
 import functools
 import io
 import zipfile
+import requests
 from pathlib import Path
 from datetime import datetime
 from email.mime.text import MIMEText
@@ -21,6 +22,114 @@ from PIL import Image
 
 
 GMAIL_MAX_MB = 25
+
+NICHES = [
+    "AI and human collaboration in workplace",
+    "Sustainable living and eco-friendly lifestyle",
+    "Mental wellness and mindfulness"
+]
+
+USED_PROMPTS_PATH = Path(__file__).parent / "data" / "used_prompts.json"
+
+
+def _load_used_prompts() -> list[str]:
+    """Load list of previously used prompts to avoid duplicates."""
+    if USED_PROMPTS_PATH.exists():
+        with open(USED_PROMPTS_PATH, "r") as f:
+            return json.load(f)
+    return []
+
+
+def _save_used_prompts(prompts: list[str]) -> None:
+    """Save used prompts to file."""
+    USED_PROMPTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(USED_PROMPTS_PATH, "w") as f:
+        json.dump(prompts, f, indent=2)
+
+
+def _generate_prompts_with_groq(niche: str, count: int, used_prompts: list[str]) -> list[dict]:
+    """Generate unique prompts using Groq API."""
+    api_key = os.environ.get("GROQ_API_KEY", "")
+    if not api_key:
+        print("ERROR: GROQ_API_KEY not set")
+        return []
+    
+    used_text = "\n".join(f"- {p}" for p in used_prompts[-50:]) if used_prompts else "None yet"
+    
+    system_prompt = f"""You are a clip art prompt generator. Generate {count} unique, detailed prompts for AI clip art generation.
+
+NICHE: {niche}
+
+REQUIREMENTS:
+- Each prompt must describe a single clip art illustration
+- Include style details: flat design, minimal, colorful, clean lines
+- NO duplicates with previously used prompts
+- Images must be commercial-ready (businesses would buy these)
+- Include diverse subjects and compositions
+
+PREVIOUSLY USED PROMPTS (DO NOT DUPLICATE):
+{used_text}
+
+OUTPUT FORMAT (JSON array):
+[
+  {{"title": "Short title", "prompt": "Detailed prompt", "niche": "{niche}"}},
+  ...
+]
+
+Generate exactly {count} prompts. Output ONLY valid JSON, no other text."""
+
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Generate {count} unique clip art prompts for: {niche}"}
+                ],
+                "temperature": 0.9,
+                "max_tokens": 4000
+            },
+            timeout=60
+        )
+        response.raise_for_status()
+        
+        content = response.json()["choices"][0]["message"]["content"]
+        
+        import re
+        json_match = re.search(r'\[.*\]', content, re.DOTALL)
+        if json_match:
+            prompts = json.loads(json_match.group())
+            print(f"Generated {len(prompts)} prompts for niche: {niche}")
+            return prompts
+        else:
+            print("ERROR: No JSON array found in Groq response")
+            return []
+            
+    except Exception as e:
+        print(f"ERROR: Failed to generate prompts: {e}")
+        return []
+
+
+def _generate_all_prompts(count_per_niche: int = 50) -> list[dict]:
+    """Generate prompts for all niches, avoiding duplicates."""
+    used_prompts = _load_used_prompts()
+    all_prompts = []
+    
+    for niche in NICHES:
+        prompts = _generate_prompts_with_groq(niche, count_per_niche, used_prompts)
+        all_prompts.extend(prompts)
+        for p in prompts:
+            used_prompts.append(p.get("prompt", ""))
+    
+    _save_used_prompts(used_prompts)
+    
+    print(f"Total prompts generated: {len(all_prompts)}")
+    return all_prompts
 
 
 def retry_with_backoff(max_retries=3, base_delay=2, max_delay=30):
@@ -246,63 +355,50 @@ def run_pipeline(count=3):
     global IMAGES_PER_PACK
     IMAGES_PER_PACK = config.get("generation", {}).get("images_per_pack", 20)
 
-    category_keys = list(CATEGORIES.keys())
-    selected = random.sample(category_keys, min(count, len(category_keys)))
+    try:
+        all_prompts = _generate_all_prompts(count_per_niche=50)
+        if not all_prompts:
+            print("ERROR: No prompts generated, falling back to static library")
+            from prompt_library import get_all_prompts
+            all_prompts = get_all_prompts()
+    except Exception as e:
+        print(f"Dynamic generation failed: {e}, falling back to static library")
+        from prompt_library import get_all_prompts
+        all_prompts = get_all_prompts()
+
+    random.shuffle(all_prompts)
+    selected_prompts = all_prompts[:IMAGES_PER_PACK]
 
     packs_created = []
     zip_files = []
 
     try:
-        for cat_key in selected:
-            if _time.time() > DEADLINE:
-                print(f"\nTime budget exhausted, stopping")
-                break
+        pack_name = f"clipforge_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        print(f"\n--- Generating {len(selected_prompts)} images ---")
 
-            cat = CATEGORIES[cat_key]
-            print(f"\n--- {cat['name']} ---")
+        generator = ImageGenerator(str(OUTPUT_DIR))
+        try:
+            results = generator.generate_pack(
+                [p.get("prompt", "") for p in selected_prompts],
+                pack_name,
+                "mixed",
+                deadline=DEADLINE
+            )
+            print(f"  Generated {len(results)} images")
+        except Exception as e:
+            print(f"  Image generation failed: {e}")
 
-            print("1. Generating prompts with Groq...")
-            pack = generate_category_pack(client, config, cat_key, 1, IMAGES_PER_PACK)
-            if not pack:
-                print(f"  Failed to generate prompts for {cat['name']}")
-                continue
+        try:
+            print("Creating ZIP file...")
+            zip_path = ZIP_DIR / f"{pack_name}.zip"
+            pack_dir = OUTPUT_DIR / pack_name
+            create_zip(pack_dir, pack_name, zip_path)
+            zip_files.append(str(zip_path))
+        except Exception as e:
+            print(f"  ZIP creation failed: {e}")
 
-            pack["price"] = 400
-            pack_name = pack.get("pack_name", f"{cat_key}_pack")
+        packs_created.append({"pack_name": pack_name, "prompts": selected_prompts})
 
-            remaining = DEADLINE - _time.time()
-            print(f"2. Generating images with AI Horde... ({remaining/60:.0f}min budget left)")
-            generator = ImageGenerator(str(OUTPUT_DIR))
-            prompts = pack.get("prompts", [])
-
-            if prompts:
-                try:
-                    results = generator.generate_pack(
-                        [p.get("prompt", "") for p in prompts[:IMAGES_PER_PACK]],
-                        pack_name,
-                        cat_key,
-                        deadline=DEADLINE
-                    )
-                    print(f"  Generated {len(results)} images")
-                except Exception as e:
-                    print(f"  Image generation failed for {cat['name']}: {e}")
-                    packs_created.append(pack)
-                    continue
-
-                try:
-                    print("3. Creating ZIP file...")
-                    zip_path = ZIP_DIR / f"{pack_name}.zip"
-                    pack_dir = OUTPUT_DIR / pack_name
-                    create_zip(pack_dir, pack_name, zip_path)
-                    zip_files.append(str(zip_path))
-                except Exception as e:
-                    print(f"  ZIP creation failed for {cat['name']}: {e}")
-
-            packs_created.append(pack)
-
-            pack_file = DATA_DIR / f"{pack_name}.json"
-            with open(pack_file, "w") as f:
-                json.dump(pack, f, indent=2)
     except KeyboardInterrupt:
         print("\nPipeline interrupted, generating report...")
     except Exception as e:

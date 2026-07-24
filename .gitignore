@@ -1,7 +1,8 @@
 output/
 zips/
 reports/
-data/
+data/*.json
+!data/used_prompts.json
 __pycache__/
 *.pyc
 .env
